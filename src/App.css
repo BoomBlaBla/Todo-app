@@ -1,0 +1,72 @@
+.App {
+
+}
+
+.App-logo {
+  height: 40vmin;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .App-logo {
+    animation: App-logo-spin infinite 20s linear;
+  }
+}
+
+.App-header {
+  background-color: #282c34;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 2vmin);
+  color: white;
+}
+
+.App-link {
+  color: #61dafb;
+}
+
+@keyframes App-logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.arco-icon { font-size: 32; }
+
+.arco-list {
+  border: none;
+}
+
+.task-list-container{
+  padding:5px 35px;
+}
+
+
+.flex-row{
+  display:flex;
+  flex-direction:row;
+  align-items: center;
+  width:100%;
+}
+
+/* .app-myList::-webkit-scrollbar-track{
+  display:none;
+} */
+
+/* 隐藏滚动条按钮 */
+.app-myList::-webkit-scrollbar{
+    display: none;
+}
+
+.float-button{
+  color:white;
+  background-color:rgba(24,24,24,0.78);
+  width:28px;
+  height:28px;
+}
