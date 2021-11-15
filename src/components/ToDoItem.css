@@ -2,7 +2,6 @@
     padding:13px 22px;
     background-color:rgb(255,255,255);
     border-radius: 6px;
-    min-width: 420px;
 }
 
 .list-item-normal + .list-item-normal{

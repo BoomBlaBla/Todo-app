@@ -31,8 +31,7 @@ class ToDoItem extends Component{
     }
 
     handleItemClick(){
-        console.log('click');
-        this.props.onClick(this.state);
+        this.props.onClick(this.props);
     }
 
     render(){
@@ -40,6 +39,7 @@ class ToDoItem extends Component{
         const state = this.state ; 
         return (
             <List.Item key={props.id} className="list-item-normal"
+                style={this.props.style}
                 onClick={this.handleItemClick}
                 extra={
                     <StarRadio fillColor={this.props.fillColor} className="star-button" important={state.important} onClick={this.handleStarClick}/>
