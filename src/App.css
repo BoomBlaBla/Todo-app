@@ -70,3 +70,7 @@
   width:28px;
   height:28px;
 }
+
+input.no-border{
+  border:none !important;
+}

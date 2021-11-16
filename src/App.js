@@ -10,45 +10,47 @@ import '@arco-design/web-react/dist/css/arco.css';
 import {ThemeContext} from './components/Theme.jsx'
 import '@arco-design/web-react/dist/css/index.less'
 import './App.css';
-import { nullLiteral, thisExpression } from '@babel/types';
 
 class App extends Component{
   constructor(props){
     super(props);
     this.idGenerator = 200;
     this.state = {
-      list:props.list===[{id:1 , content:'这是一个测试任务' , steps:['任务1']}],
+      list:[{id:1 , important:false , finished:false , content:'重要|这是一个测试任务' , steps:['任务1']}],
       showDetails:false,
       isModalVisible:false,
-      offTop:160,
-      contentHeight:500 , 
       selectedKey:'0',
       editingItem:"",
-      selectedListItem:{id:1 , steps:['这是我的一天#任务1'] , content:'这是我的一天'},
+      selectedListItemIndex:null,
       menuItems:[
         {
           key:'0',
           icon:IconSun,
           description:'我的一天',
-          theme:'themeBlue'
+          theme:'themeBlue',
+          list:[{id:1 , important:false , finished:false , content:'我的一天|这是一个测试任务' , steps:['任务1']}],
         },
         {
           key:'1',
           icon:IconStar,
           description:'重要',
-          theme:'themePink'
+          theme:'themePink',
+          list:[{id:1 , important:false , finished:false , content:'重要|这是一个测试任务' , steps:['任务1']}],
         },
         {
           key:'2',
           icon:IconHome,
           description:'任务',
-          theme:'themeGreen'
+          theme:'themeGreen',
+          list:[{id:1 , important:false , finished:false , content:'任务|这是一个测试任务' , steps:['任务1']}],
         }
       ]
     }
     this.handleMenuClick = this.handleMenuClick.bind(this);
     this.handleListItemClick = this.handleListItemClick.bind(this);
-    this.deleteFromToday = this.deleteFromToday.bind(this);
+    this.deleteFromList = this.deleteFromList.bind(this);
+    this.handleFinishedRadioClick = this.handleFinishedRadioClick.bind(this);
+    this.handleStarRadioClick = this.handleStarRadioClick.bind(this);
     this.listRef = React.createRef();
   }
 
@@ -59,29 +61,43 @@ class App extends Component{
       let myList = document.getElementsByClassName("app-myList")[0];
       myList.scrollTo(0 , myList.scrollTop+delta);
     } ,{passive:false});
+    this.handleMenuClick(this.state.menuItems[0].key);
   }
 
   handleMenuClick(key){
-    let items = [] ;
-    let cnt = 10;
-    switch(key){
-      case '0':
-        while(cnt-->0)items.push({id:1 , steps:['这是我的一天#任务1'] , content:'这是我的一天'});
-        break;
-      case '1':
-        while(cnt-->0)items.push({id:1 , steps:['这是重要的任务#任务1'] , content:'这是重要的任务'});
-        break;
-      case '2':
-        while(cnt-->0)items.push({id:1 , steps:['这是所有任务'] , content:'这是所有任务'});
-        break;
-      default:break;
-    }
-    this.setState({selectedKey:key , list:items , isModalVisible:false,
-      showDetails:false , offTop:160 , contentHeight:500});
+    const newMenuItems = this.state.menuItems.map((menuItem)=>{
+      if(menuItem.key===this.state.selectedKey) menuItem.list = this.state.list;
+      return menuItem;
+    });
+    this.setState({menuItems:newMenuItems});
+    const items = this.state.menuItems.find((menuItem)=>{if(menuItem.key === key) return true});
+    this.setState({selectedKey:key , list:items==null?[]:items.list, 
+      isModalVisible:false , selectedListItemIndex:null,
+      showDetails:false , offTop:10 , contentHeight:650});
   }
 
-  handleListItemClick(ele){
-    this.setState({selectedListItem:ele , showDetails:!this.state.showDetails});
+  handleListItemClick(aIndex){
+    this.setState({selectedListItemIndex:aIndex , showDetails:!this.state.showDetails});
+  }
+
+  handleStarRadioClick(aIndex){
+    const newList = this.state.list.map((item,index)=>{
+      if(index===aIndex){
+        item.important = !item.important;
+      }
+      return item;
+    })
+    this.setState({list:newList});
+  }
+
+  handleFinishedRadioClick(aIndex){
+    const newList = this.state.list.map((item,index)=>{
+      if(index===aIndex){
+        item.finished = !item.finished;
+      }
+      return item;
+    })
+    this.setState({list:newList});
   }
 
   //修改主题
@@ -91,21 +107,23 @@ class App extends Component{
     this.setState({menuItems:menuItems});
   }
   
-  deleteFromToday(){
-    console.log("delte from today")
+  deleteFromList(aIndex){
+    
   }
 
   addNewItemToList(){
+    if(this.state.editingItem===null || this.state.editingItem.length==0) return ;
     let newList = [{id:this.idGenerator++,content:this.state.editingItem, steps:[]}].concat(this.state.list);
     this.setState({list:newList , editingItem:""});
   }
+
 
   render(){
     const theme = ThemeContext[this.state.menuItems[this.state.selectedKey].theme];
     const TextArea = Input.TextArea;
     const FormItem = Form.Item;
     const Text = Typography.Text;
-    const selectedListItem = this.state.selectedListItem===null?{}:this.state.selectedListItem;
+    const selectedListItem = this.state.selectedListItemIndex!=null && this.state.list[this.state.selectedListItemIndex];
     const themeBlocks = Object.entries(ThemeContext).map((entry)=>{
       return (<Button style={{ width:50 , height:50 , backgroundImage:entry[1].panelBackgroundImage}} 
       onClick={()=>{
@@ -119,7 +137,7 @@ class App extends Component{
       }}></Button>);
     })
     return (
-      <div className="App">
+      <div className="App"> 
         <Layout>
         <Layout.Sider>
           <div style={{height:30 , color:'rgb(115,115,115)'}}>
@@ -138,15 +156,18 @@ class App extends Component{
             <List hoverable={true}
               bordered={false}
               split={false}
-              style={{marginTop:10,paddingTop:150,maxHeight:650,paddingBottom:90}}
+              style={{marginTop:this.state.offTop,paddingTop:150,maxHeight:this.state.contentHeight,paddingBottom:90}}
               className="app-myList"
               dataSource={this.state.list}
               listRef={this.listRef}
               render={(item,index)=>(
                   <ToDoItem style={{minWidth:'420px'}}
-                    key={this.state.selectedKey+'-'+index} finished={false} important={false} steps={item.steps}
+                    index={index} key={this.state.selectedKey+'-'+index} 
+                    important={item.important} finished={item.finished}
+                    steps={item.steps} content={item.content} deadline="2021-11-01"
                     onClick={this.handleListItemClick} fillColor={theme.panelBackgroundColor}
-                    content={item.content} deadline="2021-11-01"/>
+                    onFinishedRadioClick={this.handleFinishedRadioClick}
+                    onStarRadioClick={this.handleStarRadioClick}/>
                 )} 
             />
             <Button icon={<IconBulb style={{color:'white'}}/>}
@@ -181,27 +202,39 @@ class App extends Component{
         </Layout.Content>
         <Layout.Sider style={{display:(this.state.showDetails?'':'none'), width:280}}>
           <ToDoItem finished={selectedListItem.finished} important={selectedListItem.important} steps={selectedListItem.steps} 
-            onClick={this.handleListItemClick} fillColor={theme.panelBackgroundColor}
+            fillColor={theme.panelBackgroundColor}
             style={{width:'280px'}}
+            editable={this.state.showDetails}
+            index={this.state.selectedListItemIndex}
+            onFinishedRadioClick={this.handleFinishedRadioClick}
+            onStarRadioClick={this.handleStarRadioClick}
+            onContentChange={(val)=>{
+              const newList = this.state.list.map((item,index)=>{
+                if(index==this.state.selectedListItemIndex)
+                  item.content = val;
+                return item;
+              });
+              this.setState({list:newList});
+            }}
             content={selectedListItem.content} deadline="2021-11-01"/>
           <div style={{marginTop:50 , padding:'0px 10px'}}>
             <Form>
                 <FormItem label={<IconSun style={{color:'rgb(67,106,242)'}}/>}>
                     <Text style={{color:'rgb(67,106,242)' ,fontSize:18}}>添加到我的一天</Text>
-                    <IconClose style={{color:'rgb(67,106,242)' , height:20 , width:20 , marginLeft:20}} onClick={(e)=>{this.deleteFromToday()}}></IconClose>
+                    <IconClose style={{color:'rgb(67,106,242)' , height:20 , width:20 , marginLeft:20}} onClick={(e)=>{this.deleteFromList()}}></IconClose>
                 </FormItem>
 
                 <FormItem label={<IconClockCircle />}>
-                  <DatePicker value={this.state.selectedListItem.remindDate}
+                  <DatePicker value={selectedListItem.remindDate}
                     triggerElement={<Input placeholder="提醒我"/>}/>
                 </FormItem>
 
                 <FormItem label={<IconCalendar/>}>
-                  <DatePicker value={this.state.selectedListItem.deadline}
+                  <DatePicker value={selectedListItem.deadline}
                     triggerElement={<Input placeholder="截至日期"/>}/>
                 </FormItem>
                 <FormItem label={' '}>
-                    <TextArea placeholder="添加备注" style={{height:50 , width:"100%"}} value={this.state.selectedListItem.memory}/>
+                    <TextArea placeholder="添加备注" style={{height:50 , width:"100%"}} value={selectedListItem.memory}/>
                 </FormItem>
             </Form>
           </div>
