@@ -43,11 +43,6 @@
   border: none;
 }
 
-.task-list-container{
-  padding:5px 35px;
-}
-
-
 .flex-row{
   display:flex;
   flex-direction:row;

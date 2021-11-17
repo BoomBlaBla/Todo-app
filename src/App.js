@@ -22,6 +22,7 @@ class App extends Component{
       selectedKey:'0',
       editingItem:"",
       selectedListItemIndex:null,
+      appSize:{width:window.innerWidth,height:window.innerHeight},
       menuItems:[
         {
           key:'0',
@@ -56,12 +57,23 @@ class App extends Component{
 
   componentDidMount(){
     document.getElementById("list-container").addEventListener('wheel',(e)=>{
-      let delta = -e.wheelDelta / 9;
+      let delta = -e.wheelDelta / 6.5;
       e.preventDefault();
       let myList = document.getElementsByClassName("app-myList")[0];
       myList.scrollTo(0 , myList.scrollTop+delta);
     } ,{passive:false});
     this.handleMenuClick(this.state.menuItems[0].key);
+
+    var resizeTimeOut = null ;
+    window.addEventListener('resize',()=>{
+      if(!resizeTimeOut){
+        resizeTimeOut = setTimeout(()=>{
+          resizeTimeOut = null;
+          const newAppSize = {width : window.innerWidth<800?800:window.innerWidth , height:window.innerHeight<600?600:window.innerHeight}
+          this.setState({appSize:newAppSize});
+        },80);
+      }
+    },false);
   }
 
   handleMenuClick(key){
@@ -77,7 +89,8 @@ class App extends Component{
   }
 
   handleListItemClick(aIndex){
-    this.setState({selectedListItemIndex:aIndex , showDetails:!this.state.showDetails});
+    if(this.state.selectedListItemIndex==aIndex)this.setState({showDetails:!this.state.showDetails});
+    else this.setState({selectedListItemIndex:aIndex });
   }
 
   handleStarRadioClick(aIndex){
@@ -149,7 +162,7 @@ class App extends Component{
             selectedKey={this.state.selectedKey}/>
         </Layout.Sider>
         <Layout.Content>
-          <div style={{position:'relative' , backgroundImage:theme.panelBackgroundImage}} class="task-list-container" id="list-container">
+          <div style={{height:this.state.appSize.height-10 ,padding:'5px 32px', position:'relative' , backgroundImage:theme.panelBackgroundImage}} class="task-list-container" id="list-container">
             <div style={{display:'flex' , alignItems:'center' , height:'132px' , position:'absolute' , top:'0px' , right:'0px' , left:'0px' , backgroundColor:theme.panelBackgroundColor , opacity:'0.92456'}}>
               <span style={{marginLeft:'40px'}}><IconHome style={{height:'40px', width:'40px',color:'white'}}></IconHome><span style={{color:'white' , fontSize:'39px', fontWeight:'bold' , marginLeft:'23px'}}>任务</span></span>
             </div>
