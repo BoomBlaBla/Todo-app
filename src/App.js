@@ -3,6 +3,7 @@ import { Layout, List ,Button , Input , Form , Typography, Modal, Space ,DatePic
 import {Navigation} from './components/Navigation';
 import { FloatInput } from './components/FloatInput';
 import {ToDoItem} from './components/ToDoItem';
+import {ScrollBar} from './components/ScrollBar';
 import {
     IconMore,IconHome,IconSun,IconStar,IconBulb,IconClockCircle,IconCalendar,IconClose
 } from '@arco-design/web-react/icon';
@@ -23,6 +24,8 @@ class App extends Component{
       editingItem:"",
       selectedListItemIndex:null,
       appSize:{width:window.innerWidth,height:window.innerHeight},
+      contextMenuXY:{},
+      showContextMenu:false,
       menuItems:[
         {
           key:'0',
@@ -45,7 +48,13 @@ class App extends Component{
           theme:'themeGreen',
           list:[{id:1 , important:false , finished:false , content:'任务|这是一个测试任务' , steps:['任务1']}],
         }
-      ]
+      ],
+      scrollBarConfig:
+      {
+        offsetY:0 ,
+        contentHeight:0,
+        visibleHeight:0,
+      }
     }
     this.handleMenuClick = this.handleMenuClick.bind(this);
     this.handleListItemClick = this.handleListItemClick.bind(this);
@@ -56,11 +65,27 @@ class App extends Component{
   }
 
   componentDidMount(){
+    var repaintScrollBar = null ;
+    const listWrapperDom = this.listRef.current.dom.children[0];
     document.getElementById("list-container").addEventListener('wheel',(e)=>{
+      console.log(e);
       let delta = -e.wheelDelta / 6.5;
-      e.preventDefault();
       let myList = document.getElementsByClassName("app-myList")[0];
-      myList.scrollTo(0 , myList.scrollTop+delta);
+      if(!repaintScrollBar){
+        repaintScrollBar = setTimeout(()=>{
+          myList.scrollTo(0 , myList.scrollTop+delta);
+          this.setState({
+            scrollBarConfig:{
+              offsetY:listWrapperDom.scrollTop,
+              contentHeight:listWrapperDom.scrollHeight,
+              visibleHeight:listWrapperDom.clientHeight
+            }
+          });
+          this.forceUpdate();
+          repaintScrollBar = null ;
+        }, 10)
+      }
+
     } ,{passive:false});
     this.handleMenuClick(this.state.menuItems[0].key);
 
@@ -68,24 +93,53 @@ class App extends Component{
     window.addEventListener('resize',()=>{
       if(!resizeTimeOut){
         resizeTimeOut = setTimeout(()=>{
-          resizeTimeOut = null;
           const newAppSize = {width : window.innerWidth<800?800:window.innerWidth , height:window.innerHeight<600?600:window.innerHeight}
           this.setState({appSize:newAppSize});
-        },80);
+          resizeTimeOut = null;
+        },60);
       }
     },false);
+
+    document.oncontextmenu = (e)=>{
+      this.setState({
+        showContextMenu:true,
+        contextMenuXY:
+        {
+          clientX:e.clientX,
+          clientY:e.clientY,
+        }
+      })
+      return false;
+    }
+    document.addEventListener('click',(e)=>{this.setState({showContextMenu:false})});
   }
 
   handleMenuClick(key){
+    console.log(this.listRef.current);
+    
     const newMenuItems = this.state.menuItems.map((menuItem)=>{
       if(menuItem.key===this.state.selectedKey) menuItem.list = this.state.list;
       return menuItem;
     });
-    this.setState({menuItems:newMenuItems});
-    const items = this.state.menuItems.find((menuItem)=>{if(menuItem.key === key) return true});
-    this.setState({selectedKey:key , list:items==null?[]:items.list, 
-      isModalVisible:false , selectedListItemIndex:null,
-      showDetails:false , offTop:10 , contentHeight:650});
+    const items = newMenuItems.find((menuItem)=>{if(menuItem.key === key) return true});
+    this.setState({menuItems:newMenuItems , selectedKey:key , 
+      list:items==null?[]:items.list,
+      isModalVisible:false , selectedListItemIndex:null ,
+      showDetails:false , offTop:10 , contentHeight:648});
+    this.forceUpdate();
+    console.log("old listref");
+    console.log(this.listRef);
+    const listWrapperDom = this.listRef.current.dom.children[0];
+    console.log("new listref")
+    console.log(this.listRef);
+    this.setState({
+      scrollBarConfig:
+      {
+        offsetY:0,
+        contentHeight:listWrapperDom.scrollHeight,
+        visibleHeight:listWrapperDom.clientHeight,
+      }
+    });
   }
 
   handleListItemClick(aIndex){
@@ -135,6 +189,7 @@ class App extends Component{
     const theme = ThemeContext[this.state.menuItems[this.state.selectedKey].theme];
     const TextArea = Input.TextArea;
     const FormItem = Form.Item;
+    const ButtonGroup = Button.Group;
     const Text = Typography.Text;
     const selectedListItem = this.state.selectedListItemIndex!=null && this.state.list[this.state.selectedListItemIndex];
     const themeBlocks = Object.entries(ThemeContext).map((entry)=>{
@@ -161,7 +216,7 @@ class App extends Component{
             onClickMenuItem={this.handleMenuClick} 
             selectedKey={this.state.selectedKey}/>
         </Layout.Sider>
-        <Layout.Content>
+        <Layout.Content style={{overflowY:"hidden"}}>
           <div style={{height:this.state.appSize.height-10 ,padding:'5px 32px', position:'relative' , backgroundImage:theme.panelBackgroundImage}} class="task-list-container" id="list-container">
             <div style={{display:'flex' , alignItems:'center' , height:'132px' , position:'absolute' , top:'0px' , right:'0px' , left:'0px' , backgroundColor:theme.panelBackgroundColor , opacity:'0.92456'}}>
               <span style={{marginLeft:'40px'}}><IconHome style={{height:'40px', width:'40px',color:'white'}}></IconHome><span style={{color:'white' , fontSize:'39px', fontWeight:'bold' , marginLeft:'23px'}}>任务</span></span>
@@ -253,6 +308,15 @@ class App extends Component{
           </div>
         </Layout.Sider> 
         </Layout>
+        <Modal style={{position:'fixed' , left:this.state.contextMenuXY.clientX,top:this.state.contextMenuXY.clientY ,width:180 ,padding:'8px 14px' }} simple={true} footer={null} mask={false} visible={this.state.showContextMenu}>
+            <ButtonGroup>
+              <Button>菜单一</Button>
+              <Button>菜单二</Button>
+              <Button>菜单三</Button>
+              <Button>菜单四</Button>
+            </ButtonGroup>
+        </Modal>
+        <ScrollBar offsetY={this.state.scrollBarConfig.offsetY} visibleHeight={this.state.scrollBarConfig.visibleHeight} contentHeight={this.state.scrollBarConfig.contentHeight} />
       </div>)
   };
 }

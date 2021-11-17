@@ -19,7 +19,7 @@ class FloatInput extends Component{
     
     handlePressEnter(){
         this.props.onPressEnter();
-        this.inputRef.blur();
+        // this.inputRef.blur();
     }
 
     render(){
