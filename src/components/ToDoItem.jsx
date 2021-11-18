@@ -9,13 +9,12 @@ class ToDoItem extends Component{
         super(props);
         this.state = {
             editing:false,
-            content:props.content,
         }
         this.handleRadioClick = this.handleRadioClick.bind(this);
         this.handleStarClick = this.handleStarClick.bind(this);
         this.handleItemClick = this.handleItemClick.bind(this);
         this.updateContent = this.updateContent.bind(this);
-        this.updateContentAfterEnter = this.updateContentAfterEnter.bind(this);
+        this.updateContentToApp = this.updateContentToApp.bind(this);
         this.inputRef = React.createRef();
     }
 
@@ -33,12 +32,12 @@ class ToDoItem extends Component{
         if(this.props.onClick) this.props.onClick(this.props.index);
     }
 
-    updateContent(){
-        this.props.onContentChange(this.state.content);
+    updateContent(val,updateToApp){
+        this.props.onContentChange(val , updateToApp);
     }
 
-    updateContentAfterEnter(){
-        this.updateContent();
+    updateContentToApp(){
+        this.updateContent(this.inputRef.dom.value , true);
         this.inputRef.blur();
     }
 
@@ -48,10 +47,10 @@ class ToDoItem extends Component{
                                 (<Input ref={(ref)=>{this.inputRef = ref}} 
                                     className="no-border"
                                     style={{textDecoration:props.finished&&!props.editing?'line-through':'' , backgroundColor:'white'}} 
-                                    defaultValue={props.content} 
-                                    onChange={(val)=>{this.setState({content:val})}}
-                                    onPressEnter={this.updateContentAfterEnter}
-                                    onBlur={this.updateContent}
+                                    value={props.content}
+                                    onChange={(val)=>{this.updateContent(val , false)}}
+                                    onPressEnter={this.updateContentToApp}
+                                    onBlur={this.updateContentToApp}
                                     />):
                                 (<span style={{textDecoration:props.finished?'line-through':''}}>
                                     {props.content}
@@ -63,7 +62,7 @@ class ToDoItem extends Component{
         });
         const current = (unfinishedStepIndexs==null?1:(unfinishedStepIndexs[0]+1));
         return (
-            <List.Item key={props.id} className="list-item-normal"
+            <List.Item key={props.key} className="list-item-normal"
                 style={props.style}
                 onClick={this.handleItemClick}
                 extra={

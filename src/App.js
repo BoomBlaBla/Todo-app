@@ -22,6 +22,7 @@ class App extends Component{
       isModalVisible:false,
       selectedKey:'0',
       editingItem:"",
+      selectedItemEditingTempField:{},
       selectedListItemIndex:null,
       appSize:{width:window.innerWidth,height:window.innerHeight},
       contextMenuXY:{},
@@ -61,31 +62,23 @@ class App extends Component{
     this.deleteFromList = this.deleteFromList.bind(this);
     this.handleFinishedRadioClick = this.handleFinishedRadioClick.bind(this);
     this.handleStarRadioClick = this.handleStarRadioClick.bind(this);
+    this.updateScrollBar = this.updateScrollBar.bind(this);
     this.listRef = React.createRef();
   }
 
   componentDidMount(){
     var repaintScrollBar = null ;
-    const listWrapperDom = this.listRef.current.dom.children[0];
     document.getElementById("list-container").addEventListener('wheel',(e)=>{
-      console.log(e);
       let delta = -e.wheelDelta / 6.5;
       let myList = document.getElementsByClassName("app-myList")[0];
       if(!repaintScrollBar){
         repaintScrollBar = setTimeout(()=>{
-          myList.scrollTo(0 , myList.scrollTop+delta);
-          this.setState({
-            scrollBarConfig:{
-              offsetY:listWrapperDom.scrollTop,
-              contentHeight:listWrapperDom.scrollHeight,
-              visibleHeight:listWrapperDom.clientHeight
-            }
-          });
-          this.forceUpdate();
+          const newScrollTop = myList.scrollTop+delta;
+          myList.scrollTo(0 , newScrollTop);
+          this.updateScrollBar();
           repaintScrollBar = null ;
-        }, 10)
+        },15)
       }
-
     } ,{passive:false});
     this.handleMenuClick(this.state.menuItems[0].key);
 
@@ -113,65 +106,52 @@ class App extends Component{
     }
     document.addEventListener('click',(e)=>{this.setState({showContextMenu:false})});
   }
-
-  handleMenuClick(key){
-    console.log(this.listRef.current);
-    
-    const newMenuItems = this.state.menuItems.map((menuItem)=>{
-      if(menuItem.key===this.state.selectedKey) menuItem.list = this.state.list;
-      return menuItem;
-    });
-    const items = newMenuItems.find((menuItem)=>{if(menuItem.key === key) return true});
-    this.setState({menuItems:newMenuItems , selectedKey:key , 
-      list:items==null?[]:items.list,
-      isModalVisible:false , selectedListItemIndex:null ,
-      showDetails:false , offTop:10 , contentHeight:648});
-    this.forceUpdate();
-    console.log("old listref");
-    console.log(this.listRef);
+  
+  updateScrollBar(){
     const listWrapperDom = this.listRef.current.dom.children[0];
-    console.log("new listref")
-    console.log(this.listRef);
     this.setState({
       scrollBarConfig:
       {
-        offsetY:0,
+        offsetY:listWrapperDom.scrollTop,
         contentHeight:listWrapperDom.scrollHeight,
         visibleHeight:listWrapperDom.clientHeight,
       }
     });
   }
 
+  handleMenuClick(key){
+    const newMenuItems = this.state.menuItems.map((menuItem)=>{
+      if(menuItem.key===this.state.selectedKey) menuItem.list = this.state.list;
+      return menuItem;
+    });
+    const items = newMenuItems.find((menuItem)=>{if(menuItem.key === key) return true});
+    this.setState({selectedKey:key , 
+      list:items==null?[]:items.list,
+      isModalVisible:false , selectedListItemIndex:null ,
+      showDetails:false , offTop:10 , contentHeight:648},this.updateScrollBar);
+
+  }
+
   handleListItemClick(aIndex){
-    if(this.state.selectedListItemIndex==aIndex)this.setState({showDetails:!this.state.showDetails});
-    else this.setState({selectedListItemIndex:aIndex });
+    const newSelectedItemEditingTempField = JSON.parse(JSON.stringify(this.state.list[aIndex]));//需要深拷贝
+    if(this.state.selectedListItemIndex===aIndex)this.setState({showDetails:!this.state.showDetails , selectedItemEditingTempField:newSelectedItemEditingTempField});
+    else this.setState({selectedListItemIndex:aIndex , selectedItemEditingTempField:newSelectedItemEditingTempField, showDetails:true});
   }
 
   handleStarRadioClick(aIndex){
-    const newList = this.state.list.map((item,index)=>{
-      if(index===aIndex){
-        item.important = !item.important;
-      }
-      return item;
-    })
-    this.setState({list:newList});
+    this.state.list[aIndex].important = !this.state.list[aIndex].important;
+    this.setState({list:this.state.list});
   }
 
   handleFinishedRadioClick(aIndex){
-    const newList = this.state.list.map((item,index)=>{
-      if(index===aIndex){
-        item.finished = !item.finished;
-      }
-      return item;
-    })
-    this.setState({list:newList});
+    this.state.list[aIndex].finished = !this.state.list[aIndex].finished;
+    this.setState({list:this.state.list});
   }
 
   //修改主题
   switchTheme(index,theme){
-    var menuItems = this.state.menuItems;
-    menuItems[index].theme = theme;
-    this.setState({menuItems:menuItems});
+    this.state.menuItems[index].theme = theme;
+    this.setState({menuItems:this.state.menuItems});
   }
   
   deleteFromList(aIndex){
@@ -180,8 +160,8 @@ class App extends Component{
 
   addNewItemToList(){
     if(this.state.editingItem===null || this.state.editingItem.length==0) return ;
-    let newList = [{id:this.idGenerator++,content:this.state.editingItem, steps:[]}].concat(this.state.list);
-    this.setState({list:newList , editingItem:""});
+    let newList = [{id:this.idGenerator++,content:this.state.editingItem, steps:[] , important:false, finished:false}].concat(this.state.list);
+    this.setState({list:newList , editingItem:""} , this.updateScrollBar);
   }
 
 
@@ -191,7 +171,7 @@ class App extends Component{
     const FormItem = Form.Item;
     const ButtonGroup = Button.Group;
     const Text = Typography.Text;
-    const selectedListItem = this.state.selectedListItemIndex!=null && this.state.list[this.state.selectedListItemIndex];
+    const selectedListItem = this.state.selectedListItemIndex==null || this.state.list[this.state.selectedListItemIndex];
     const themeBlocks = Object.entries(ThemeContext).map((entry)=>{
       return (<Button style={{ width:50 , height:50 , backgroundImage:entry[1].panelBackgroundImage}} 
       onClick={()=>{
@@ -266,6 +246,7 @@ class App extends Component{
                 this.addNewItemToList();
               }}/>
             </div>
+            <ScrollBar offsetY={this.state.scrollBarConfig.offsetY} visibleHeight={this.state.scrollBarConfig.visibleHeight} contentHeight={this.state.scrollBarConfig.contentHeight}/>
           </div>
         </Layout.Content>
         <Layout.Sider style={{display:(this.state.showDetails?'':'none'), width:280}}>
@@ -276,15 +257,19 @@ class App extends Component{
             index={this.state.selectedListItemIndex}
             onFinishedRadioClick={this.handleFinishedRadioClick}
             onStarRadioClick={this.handleStarRadioClick}
-            onContentChange={(val)=>{
-              const newList = this.state.list.map((item,index)=>{
-                if(index==this.state.selectedListItemIndex)
-                  item.content = val;
-                return item;
-              });
-              this.setState({list:newList});
+            onContentChange={(val,updateToApp)=>{
+              let newSelectedItemEditingTempField = this.state.selectedItemEditingTempField;
+              newSelectedItemEditingTempField.content = val ;
+              if(updateToApp===true){
+                let newList = this.state.list;
+                newList[this.state.selectedListItemIndex].content = val ;
+                this.setState({list:newList , selectedItemEditingTempField:newSelectedItemEditingTempField});
+              }
+              else {
+                this.setState({selectedItemEditingTempField:newSelectedItemEditingTempField});
+              }
             }}
-            content={selectedListItem.content} deadline="2021-11-01"/>
+            content={this.state.selectedItemEditingTempField.content} deadline="2021-11-01"/>
           <div style={{marginTop:50 , padding:'0px 10px'}}>
             <Form>
                 <FormItem label={<IconSun style={{color:'rgb(67,106,242)'}}/>}>
@@ -316,7 +301,6 @@ class App extends Component{
               <Button>菜单四</Button>
             </ButtonGroup>
         </Modal>
-        <ScrollBar offsetY={this.state.scrollBarConfig.offsetY} visibleHeight={this.state.scrollBarConfig.visibleHeight} contentHeight={this.state.scrollBarConfig.contentHeight} />
       </div>)
   };
 }
