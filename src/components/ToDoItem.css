@@ -1,14 +1,1 @@
-.list-item-normal{
-    padding:13px 22px;
-    background-color:rgb(255,255,255);
-    border-radius: 6px;
-}
 
-.list-item-normal + .list-item-normal{
-    margin-top:2px;
-}
-
-.list-item-normal .star-button{
-    width:24px;
-    height:24px;
-}

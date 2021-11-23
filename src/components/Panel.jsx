@@ -46,3 +46,5 @@ class Panel extends Component{
         return componentRet;
     }
 }
+
+export {Panel};

@@ -10,24 +10,18 @@ class FloatInput extends Component{
         }
         this.inputRef = React.createRef();
         this.handleFocusAndBlur = this.handleFocusAndBlur.bind(this);
-        this.handlePressEnter = this.handlePressEnter.bind(this);
     }
 
     handleFocusAndBlur(){
         this.setState({isFocused:!this.state.isFocused});
     }
     
-    handlePressEnter(){
-        this.props.onPressEnter();
-        // this.inputRef.blur();
-    }
-
     render(){
         return (<Input 
             className="no-border"
             value={this.props.value}
             onChange={this.props.onChange}
-            onPressEnter={this.handlePressEnter}
+            onPressEnter={this.props.onPressEnter}
             onFocus={(e)=>{this.handleFocusAndBlur();e.preventDefault();}} 
             onBlur={(e)=>{this.handleFocusAndBlur()}} 
             placeholder="添加任务"

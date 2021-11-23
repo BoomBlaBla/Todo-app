@@ -43,7 +43,7 @@
   display:flex;
   flex-direction:row;
   align-items: center;
-  width:100%;
+  justify-content: space-between;
 }
 
 /* .app-myList::-webkit-scrollbar-track{
@@ -55,6 +55,24 @@
     display: none;
 }
 
+.arco-layout-sider-children::-webkit-scrollbar{
+  background-color:inherit;
+  width:3px;
+}
+
+.arco-layout-sider-children::-webkit-scrollbar-corner , .arco-layout-sider-children::-webkit-scrollbar-button{
+  display:none;
+}
+
+.arco-layout-sider-children::-webkit-scrollbar-thumb{
+  background-color:rgba(25,25,25,0.52);
+  border-radius: 2px;
+}
+
+.arco-layout-sider-children::-webkit-scrollbar-track{
+  opacity:0;
+}
+
 .float-button{
   color:white;
   background-color:rgba(24,24,24,0.78);
@@ -64,4 +82,33 @@
 
 input.no-border{
   border:none !important;
+}
+
+.menu-container{
+  background-color:white;
+  font-size:14px;
+  font-weight: 500;
+}
+
+.menu-item{
+  padding:4px 3px;
+}
+
+.menu-item + .menu-item{
+  margin-top:5px;
+}
+
+.list-item-normal{
+  padding:13px 22px;
+  background-color:rgb(255,255,255);
+  border-radius: 6px;
+}
+
+.list-item-normal + .list-item-normal{
+  margin-top:2px;
+}
+
+.list-item-normal .star-button{
+  width:24px;
+  height:24px;
 }

@@ -28,8 +28,8 @@ class ToDoItem extends Component{
         e.stopPropagation();
     }
 
-    handleItemClick(){
-        if(this.props.onClick) this.props.onClick(this.props.index);
+    handleItemClick(e){
+        if(this.props.onClick) this.props.onClick(this.props.index,e);
     }
 
     updateContent(val,updateToApp){
@@ -62,18 +62,17 @@ class ToDoItem extends Component{
         });
         const current = (unfinishedStepIndexs==null?1:(unfinishedStepIndexs[0]+1));
         return (
-            <List.Item key={props.key} className="list-item-normal"
-                style={props.style}
+            <List.Item key={'task-'+props.index} {...props}
                 onClick={this.handleItemClick}
                 extra={
                     <StarRadio fillColor={props.fillColor} className="star-button" important={props.important} onClick={this.handleStarClick}/>
                 }>
                 <List.Item.Meta
                     avatar={
-                        <CheckRadio fillColor={props.fillColor} checked={props.finished} onClick={this.handleRadioClick}/> 
+                        <CheckRadio style={{width:26,height:26}} fillColor={props.fillColor} checked={props.finished} onClick={this.handleRadioClick}/> 
                     }
                     title={TitleElement}
-                    description={props.steps!=null && props.steps.length > 0 && "任务#"+props.steps[0] + ' . 第'+current+'步 , 共'+props.steps.length+'步'}
+                    description={props.steps!=null && props.steps.length > 0 && props.showStepInfo!=false && "任务#"+props.steps[0].content + ' . 第'+current+'步 , 共'+props.steps.length+'步'}
                 />
             </List.Item>
         );
