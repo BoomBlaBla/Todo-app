@@ -10,13 +10,13 @@ class StarRadio extends Component{
         if(!props.important){
             return (
                 <span onClick={this.props.onClick} className={props.className} style={props.style}>
-                    <IconStarFill style={{width:'100%' , height:'100%' , color:this.props.fillColor}}/>
+                    <IconStarFill className="clickable-icon" style={{width:'100%' , height:'100%' , color:this.props.fillColor}}/>
                 </span>
             )
         }
         else return (
-            <span onClick={this.handleClick} className={props.className} style={props.style}>
-                <IconStar style={{width:'100%' , height:'100%' , color:'rgb(115,115,115)'}}/>
+            <span onClick={this.props.onClick} className={props.className} style={props.style}>
+                <IconStar className="clickable-icon" style={{width:'100%' , height:'100%' , color:'rgb(115,115,115)'}}/>
             </span>
         )
     }

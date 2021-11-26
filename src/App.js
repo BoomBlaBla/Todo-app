@@ -3,7 +3,8 @@ import { Layout, List ,Button ,Divider, Input , Form , Typography, Modal, Space 
 import {Navigation} from './components/Navigation';
 import { FloatInput } from './components/FloatInput';
 import {ToDoItem} from './components/ToDoItem';
-import {StepItem} from './components/StepItem'
+import {StepItem} from './components/StepItem';
+import {AdviceItem} from './components/AdviceItem';
 import {ScrollBar} from './components/ScrollBar';
 import {
     IconCheck,IconDelete,IconPlus,IconMore,IconHome,IconSun,IconStar,IconBulb,IconClockCircle,IconCalendar,IconClose
@@ -28,7 +29,9 @@ class App extends Component{
       selectedListItemIndex:null,
       appSize:{width:window.innerWidth,height:window.innerHeight},
       contextMenuXY:{},
+      newStep:{content:"",finished:false},
       showContextMenu:false,
+      currentValidItem:{},
       menuItems:[
         {
           key:'我的一天',
@@ -71,6 +74,13 @@ class App extends Component{
     this.deleteFromList = this.deleteFromList.bind(this);
     this.addToList = this.addToList.bind(this);
     this.moveToList = this.moveToList.bind(this);
+    this.collectUnfinishedTasks = this.collectUnfinishedTasks.bind(this);
+    this.findUnfinishedAndExcludedTasks = this.findUnfinishedAndExcludedTasks.bind(this);
+    this.getCurrentItem = this.getCurrentItem.bind(this);
+    this.getCurrentMenuItem = this.getCurrentMenuItem.bind(this);
+    this.getTodayList = this.getTodayList.bind(this);
+    this.getValidItem = this.getValidItem.bind(this);
+    this.addNewItemToList = this.addNewItemToList.bind(this);
     this.listRef = React.createRef();
     this.stepInputRef = React.createRef();
   }
@@ -105,54 +115,89 @@ class App extends Component{
 
     document.onselectstart = ()=>{return false;}
     document.oncontextmenu = (e)=>{
-      let index ;
+      let index ,isAdvice = false;
       let taskClicked = false;
       let stepClicked = false;
       for(let domNode of e.path){
-        if(domNode.classList){
-          domNode.classList.forEach((clz)=>{
-            if(clz == 'task-item') {
-              taskClicked = true;
-            }
-            if(clz == 'step-item'){
-              stepClicked = true;
-            }
-          })
+        if(domNode.classList && domNode.classList.contains){
+          if(domNode.classList.contains('task-item')) taskClicked=true;
+          if(domNode.classList.contains('step-item')) stepClicked=true;
+          // domNode.classList.forEach((clz)=>{
+          //   if(clz == 'task-item') {
+          //     taskClicked = true;
+          //   }
+          //   if(clz == 'step-item'){
+          //     stepClicked = true;
+          //   }
+          // })
           if(stepClicked || taskClicked){
             index = parseInt(domNode.getAttribute("index"));
+            isAdvice = domNode.classList.contains("advice-item");
             break;
           }
         }
       }
       const ccontextMenu = ()=>{
-        if(taskClicked){
+        let targetItem;
+        const menuItems = this.state.menuItems;
+        const advicedList = this.findUnfinishedAndExcludedTasks();
+        const todayList = this.getTodayList();
+        const list = this.state.list;
+        if(isAdvice){
+          targetItem = advicedList[index];
+        }
+        else targetItem = list[index];
+        targetItem = targetItem || {};
+        const steps = targetItem.steps ;
+        const markImportant = ()=>{
+          targetItem.important = !targetItem.important;
+          this.setState({menuItem:menuItems});
+        }
+        const markFinished = ()=>{
+          targetItem.finished = !targetItem.finished;
+          this.setState({menuItems:menuItems});
+        }
+        const deleteStep = ()=>{
+          const newSteps = steps.splice(index,1);
+          targetItem.steps = newSteps;
+          this.setState({menuItems:menuItems});
+        }
+        const markStepFinished = ()=>{
+          steps[index].finished = !steps[index].finished;
+          this.setState({menuItems:menuItems});
+        }
+        // const item =
+        if(taskClicked){//是列表项，还是建议列表项
           return (<div class="menu-container">
-            <div class="menu-item" onClick={()=>this.moveToList(index , '我的一天')}>添加到我的一天</div>
-            <div class="menu-item" onClick={(e)=>{console.log("重要")}}>标记为重要</div>
-            <div class="menu-item" onClick={(e)=>{console.log("已完成")}}>标记为已完成</div>
+            <div class="menu-item" style={{display:todayList.includes(targetItem)?'none':''}} onClick={()=>this.addToList(targetItem , '我的一天')}>添加到我的一天</div>
+            <div class="menu-item" onClick={markImportant}>标记为重要</div>
+            <div class="menu-item" onClick={markFinished}>标记为已完成</div>
+            <div class="menu-item" style={{display:todayList.includes(targetItem)?'':'none'}} onClick={()=>this.deleteFromList(index , '我的一天')}>从我的一天中删除</div>
             <Divider/>
-            <div class="menu-item" onClick={(e)=>{
-              this.deleteFromList(index);
-              console.log(index);
-              this.setState({showContextMenu:false});
+            <div class="menu-item" onClick={()=>{
+              const newMenuItems = this.state.menuItems;
+              for(let menu of newMenuItems){
+                let lp = menu.list.indexOf(targetItem);
+                if(lp>=0) menu.list.splice(lp,1);
+              }
+              this.setState({menuItems:newMenuItems});
             }}>删除任务</div>
           </div>
         )}
         else if(stepClicked){
           return (<div class="menu-container">
-            <div class="menu-item" onClick={()=>{}}>标记为完成</div>
-            <div class="menu-item" onClick={()=>{
-              this.deleteFromList(index);
-              this.setState({showContextMenu:false});
-            }}>删除步骤</div>
+            <div class="menu-item" onClick={markStepFinished}>标记为完成</div>
+            <div class="menu-item" onClick={deleteStep}>删除步骤</div>
           </div>)
         }
         else return (<></>)
       }
-      this.setState({contextMenu:ccontextMenu , contextMenuXY:{
-        clientX:e.clientX,
-        clientY:e.clientY
-      } , showContextMenu:taskClicked||stepClicked});
+      this.setState({showContextMenu:taskClicked||stepClicked,
+        contextMenu:ccontextMenu , 
+        contextMenuXY:{
+          clientX:e.clientX,
+          clientY:e.clientY
+      }});
       return false;
     }
     document.addEventListener('click',(e)=>{
@@ -166,6 +211,10 @@ class App extends Component{
 
   getCurrentItem(){
     return this.state.list[this.state.selectedListItemIndex];
+  }
+
+  getTodayList(){
+    return this.state.menuItems.find((item)=>{return item.key==='我的一天'}).list;
   }
 
   updateScrollBar(){
@@ -217,32 +266,65 @@ class App extends Component{
     }
   }
 
-  addNewStep(){
-    const newList = this.state.list; 
-    const selectedItem = newList[this.state.selectedListItemIndex];
-    selectedItem.steps = selectedItem.steps || [];
-    const val = this.state.newStepContent;
-    if(val && val.length>0){
-      selectedItem.steps.push({content:val , finished:false});
-      this.setState({list:newList});
-    }
+  collectUnfinishedTasks(){
+    const unTaskList = [].concat(...this.state.menuItems.map((menuItem)=>{
+      if(menuItem.key!=='我的一天')
+        return menuItem.list
+      else return [];
+    }));
+    return unTaskList.filter((task)=>{return !task.finished});
   }
 
-  handleListItemClick(aIndex,e){
-    const newSelectedItemEditingTempField = JSON.parse(JSON.stringify(this.state.list[aIndex]));//需要深拷贝
-    if(this.state.selectedListItemIndex===aIndex)this.setState({showDetails:!this.state.showDetails , selectedItemEditingTempField:newSelectedItemEditingTempField});
-    else this.setState({selectedListItemIndex:aIndex , selectedItemEditingTempField:newSelectedItemEditingTempField, showDetails:true});
+  findUnfinishedAndExcludedTasks(){
+    const today = this.getTodayList();
+    return this.collectUnfinishedTasks().filter((task)=>{
+      return !today.includes(task);
+    })
+  }
+
+  addNewStep(){
+    const currentValidItem = this.state.currentValidItem;
+    currentValidItem.steps = currentValidItem.steps || [];
+    currentValidItem.steps.push(this.state.newStep);
+    this.setState({
+      currentValidItem:currentValidItem,
+      newStep:{
+        content:"",
+        finished:false,
+      }
+    });
+  }
+
+  getValidItem(aIndex){
+    const curSelectedItem = this.state.list[aIndex||this.state.selectedListItemIndex] || {};
+    const selectedListItem = this.state.showCurrentItemDetails?this.state.currentItemDetailedInfo:curSelectedItem;
+    return selectedListItem;
+  }
+
+  handleListItemClick(e,item,test){
+    const newSelectedItemEditingTempField = JSON.parse(JSON.stringify(item));//需要深拷贝
+    if(this.state.currentValidItem===item || (test&&test()))
+      this.setState({
+                  trigger:'list',
+                  showDetails:!this.state.showDetails,
+                  currentValidItem:item,
+                  selectedItemEditingTempField:newSelectedItemEditingTempField});
+    else this.setState({
+                  trigger:'list',
+                  selectedItemEditingTempField:newSelectedItemEditingTempField, 
+                  currentValidItem:item,
+                  showDetails:true});
     e.preventDefault();
   }
 
-  handleStarRadioClick(aIndex){
-    this.state.list[aIndex].important = !this.state.list[aIndex].important;
-    this.setState({list:this.state.list});
+  handleStarRadioClick(item){
+    item.important = !item.important;
+    this.setState({currentValidItem:this.state.currentValidItem});
   }
 
-  handleFinishedRadioClick(aIndex){
-    this.state.list[aIndex].finished = !this.state.list[aIndex].finished;
-    this.setState({list:this.state.list});
+  handleFinishedRadioClick(item){
+    item.finished = !item.finished;
+    this.setState({currentValidItem:this.state.currentValidItem});
   }
 
   //修改主题
@@ -255,32 +337,32 @@ class App extends Component{
 
   }
   
-  deleteFromList(aIndex){
-    let listItem = this.state.list[aIndex];
+  deleteFromList(idx,mKey){
     const newMenuItems = this.state.menuItems;
-    const menu = newMenuItems.find((item)=>{if(item.key == this.state.selectedKey) return item});
-    const mList = menu.list.filter((item,index)=>{return index != aIndex}) || [];
-    menu.list = mList;
-    this.setState({menuItems:newMenuItems, list:mList});
-    return listItem;
+    const menu = this.state.menuItems.find((item)=>{if(item.key == mKey) return item;})
+    menu.list.splice(idx,1);
+    this.setState({menuItems:newMenuItems});
   }
 
   addToList(item , mKey){
     const newMenuItems = this.state.menuItems;
     const menu = this.state.menuItems.find((item)=>{if(item.key == mKey) return item;})
-    const newList = [item].concat(menu.list);
-    menu.list = newList;
+    menu.list.splice(0,0,item);
     this.setState({menuItems:newMenuItems});
   }
 
-  moveToList(aIndex , mKey){
-    const item = this.deleteFromList(aIndex);
+  moveToList(item , mKey){
+    this.deleteFromList(item , mKey);
     this.addToList(item , mKey);
   }
 
   addNewItemToList(){
     if(this.state.editingItem===null || this.state.editingItem.length==0) return ;
-    let newList = [{id:this.idGenerator++,content:this.state.editingItem, steps:[] , important:false, finished:false}].concat(this.state.list);
+    const newItem = {id:this.idGenerator++,content:this.state.editingItem, steps:[] , important:false, finished:false};
+    const newList = this.state.list;
+    newList.splice(0,0,newItem);
+    if(this.state.selectedKey!=='任务')
+      this.state.menuItems.find((mItem)=>{return mItem.key==='任务'}).list.splice(0,0,newItem);
     this.setState({list:newList , editingItem:"" , selectedListItemIndex:this.state.selectedListItemIndex+1 } , this.updateScrollBar);
   }
 
@@ -290,8 +372,17 @@ class App extends Component{
     const FormItem = Form.Item;
     const ContextMenu = this.state.contextMenu;
     const Text = Typography.Text;
-    const selectedListItem = this.state.selectedListItemIndex==null || this.state.list[this.state.selectedListItemIndex] || {};
-
+    const curSelectedItem = this.state.list[this.state.selectedListItemIndex] || {};
+    const selectedListItem = this.state.showCurrentItemDetails?this.state.currentItemDetailedInfo:curSelectedItem;
+    const currentMenuItem = this.getCurrentMenuItem();
+    const currentValidItem = this.state.currentValidItem;
+    const BannerIcon = currentMenuItem.icon;
+    const BannerText = currentMenuItem.description;
+    const isTodayMenu = currentMenuItem.key ==='我的一天';
+    const todayList = this.getTodayList();
+    const showAdvices = isTodayMenu&&!this.state.showCurrentItemDetails&&this.state.trigger==='button';
+    const mergedList = this.findUnfinishedAndExcludedTasks();
+    const alreadyAdded =  isTodayMenu && this.state.list[this.state.selectedListItemIndex]?true:false;
     const themeBlocks = Object.entries(ThemeContext).map((entry)=>{
       return (<Button style={{ width:50 , height:50 , backgroundImage:entry[1].panelBackgroundImage}} 
       onClick={()=>{
@@ -303,7 +394,27 @@ class App extends Component{
         });
         this.setState({menuItems:newMenuItems});
       }}></Button>);
-    })
+    });
+    const SiderHeader =()=>{
+      if(isTodayMenu && !this.state.showCurrentItemDetails && this.state.trigger!='list')
+        return(<>
+          <Text>建议</Text>
+          <IconClose style={{height:24,width:24,color:'rgb(110,110,110)'}} onClick={()=>{
+            this.setState({showDetails:false});
+          }}/>
+        </>)
+      else
+          return (<>
+            <span></span>
+            <IconClose style={{height:24,width:24,color:'rgb(110,110,110)'}} onClick={()=>{
+              if(isTodayMenu && this.state.showCurrentItemDetails) this.setState({
+                showCurrentItemDetails:false,
+                trigger:'button',
+              });
+              else this.setState({showDetails:false});
+            }}/>
+          </>)
+    }
     return (
       <div className="App"> 
         <Layout>
@@ -319,7 +430,7 @@ class App extends Component{
         <Layout.Content style={{overflowY:"hidden"}} id="app-main-content">
           <div style={{height:this.state.appSize.height-10 ,padding:'5px 32px', position:'relative' , backgroundImage:theme.panelBackgroundImage}} class="task-list-container" id="list-container">
             <div style={{display:'flex' , alignItems:'center' , height:'132px' , position:'absolute' , top:'0px' , right:'0px' , left:'0px' , backgroundColor:theme.panelBackgroundColor , opacity:'0.92456'}}>
-              <span style={{marginLeft:'40px'}}><IconHome style={{height:'40px', width:'40px',color:'white'}}></IconHome><span style={{color:'white' , fontSize:'39px', fontWeight:'bold' , marginLeft:'23px'}}>任务</span></span>
+              <span style={{marginLeft:'40px'}}><BannerIcon style={{height:'40px', width:'40px',color:'white'}}/><span style={{color:'white' , fontSize:'39px', fontWeight:'bold' , marginLeft:'23px'}}>{BannerText}</span></span>
             </div>
             <List hoverable={true}
               bordered={false}
@@ -331,17 +442,26 @@ class App extends Component{
               render={(item,index)=>(
                   <ToDoItem style={{minWidth:'420px'}}
                     className="task-item list-item-normal"
-                    index={index} key={this.state.selectedKey+'-'+index} 
-                    important={item.important} finished={item.finished}
-                    steps={item.steps} content={item.content} deadline="2021-11-01"
-                    onClick={this.handleListItemClick} fillColor={theme.panelBackgroundColor}
-                    onFinishedRadioClick={this.handleFinishedRadioClick}
-                    onStarRadioClick={this.handleStarRadioClick}/>
+                    index={index}
+                    {...item} fillColor={theme.panelBackgroundColor}
+                    onClick={(e)=>{
+                      this.handleListItemClick(e,item);
+                    }} 
+                    onFinishedRadioClick={()=>this.handleFinishedRadioClick(item)}
+                    onStarRadioClick={()=>this.handleStarRadioClick(item)}/>
                 )} 
             />
             <Button icon={<IconBulb style={{color:'white'}}/>}
               style={{borderRadius:7,position:'absolute' , right:'63px', top:'28px' ,zIndex:'10000' ,width:30,height:30,backgroundColor:'rgba(25,25,25,0.56)'}}
-              onClick={(e)=>{this.setState({showDetails:!this.state.showDetails})}}
+              onClick={(e)=>{
+                if(!isTodayMenu) this.setState({currentValidItem:this.state.list[0]||{}})
+                  
+                this.setState({
+                  trigger:'button',
+                  showDetails:!this.state.showDetails
+                })
+                
+              }}
             />
             <Button icon={<IconMore style={{color:'white'}}/>}
               style={{borderRadius:7,position:'absolute' , right:'16px' , top:'28px' , zIndex:'10000',width:30,height:30,backgroundColor:'rgba(25,25,25,0.56)'}}
@@ -355,67 +475,101 @@ class App extends Component{
               maskClosable
               footer={null}
               mask={false}
-              style={{position:'absolute' , top:'64px' , right:'8px' , width:'300px'}}
-            >
+              style={{position:'absolute' , top:'64px' , right:'8px' , width:'300px'}}>
               <Space wrap size={[12, 18]}>
                 {themeBlocks}
               </Space>
             </Modal>
             <div style={{display:'flex' , justifyContent:'center', alignItems:'center', height:74 , position:'absolute' , bottom:0 , right:0 , left:0 , opacity:1}}>
               <FloatInput value={this.state.editingItem}
-                onChange={(val)=>{this.setState({editingItem:val})}} onPressEnter={(e)=>{
-                this.addNewItemToList();
+                onChange={(val)=>{this.setState({editingItem:val})}} 
+                onPressEnter={(e)=>{
+                  this.addNewItemToList();
               }}/>
             </div>
             <ScrollBar offsetY={this.state.scrollBarConfig.offsetY} visibleHeight={this.state.scrollBarConfig.visibleHeight} contentHeight={this.state.scrollBarConfig.contentHeight} target={'dsa'}/>
           </div>
         </Layout.Content>
-        <Layout.Sider className="right-sider" style={{display:(this.state.showDetails?'':'none'), minWidth:280 , height:this.state.appSize.height-1 , overflow:'hidden hidden'}} >
-          <div style={{padding:'0px 12px 8px 12px'}}>
-          <ToDoItem finished={selectedListItem.finished} important={selectedListItem.important} steps={selectedListItem.steps} 
+        <Layout.Sider className="right-sider" style={{display:(this.state.showDetails?'':'none'), minWidth:300 , height:this.state.appSize.height-1 , overflow:'hidden hidden'}} >
+          <div className="flex-row sider-header" style={{justifyContent:'space-between',zIndex:11111,backgroundColor:'white',borderBottom:'1px solid rgb(229,230,235)'}}>
+            <SiderHeader/>
+          </div>
+          <div style={{marginTop:48}}>
+          <div className="right-sider-content" style={{display:showAdvices?'':'none'}}>
+                <List dataSource={mergedList}
+                  render={(item,index)=>{
+                    return (<AdviceItem index={index} className="task-item advice-item"
+                      {...item}
+                      onFinishedRadioClick={()=>{
+                        item.finished=true;
+                        this.setState({menuItems:this.state.menuItems})
+                      }}
+                      onAddRadioClick={()=>{
+                        todayList.push(item);
+                        this.setState({menuItems:this.state.menuItems});
+                      }}
+                      onItemClick={(e)=>{
+                        this.handleListItemClick(e,item,()=>{return true;});
+                        this.setState({
+                          showDetails:true,
+                          currentItemDetailedInfo:item,
+                          showCurrentItemDetails:true,
+                        })
+                      }}
+                      />);
+                  }}
+                />
+          </div>
+          </div>
+          <div className="right-sider-content" style={{display:!showAdvices||this.state.showCurrentItemDetails?'':'none'}}>
+          <ToDoItem finished={currentValidItem.finished} important={currentValidItem.important} steps={currentValidItem.steps} 
             fillColor={theme.panelBackgroundColor}
             editable={this.state.showDetails}
-            index={this.state.selectedListItemIndex}
+            index={currentValidItem.id}
             showStepInfo={false}
-            onFinishedRadioClick={this.handleFinishedRadioClick}
-            onStarRadioClick={this.handleStarRadioClick}
+            onFinishedRadioClick={()=>this.handleFinishedRadioClick(currentValidItem)}
+            onStarRadioClick={()=>this.handleStarRadioClick(currentValidItem)}
             onContentChange={(val,updateToApp)=>{
               let newSelectedItemEditingTempField = this.state.selectedItemEditingTempField;
               newSelectedItemEditingTempField.content = val ;
               if(updateToApp===true){
-                let newList = this.state.list;
-                newList[this.state.selectedListItemIndex].content = val ;
-                this.setState({list:newList , selectedItemEditingTempField:newSelectedItemEditingTempField});
+                currentValidItem.content = val ;
+                this.setState({list:this.state.list , selectedItemEditingTempField:newSelectedItemEditingTempField});
               }
               else {
                 this.setState({selectedItemEditingTempField:newSelectedItemEditingTempField});
               }
             }}
-            content={this.state.selectedItemEditingTempField.content} deadline="2021-11-01"/>
+            content={this.state.selectedItemEditingTempField.content}
+            />
           <Space/>
-          <div style={{padding:'20px 10px' , border:'1px solid rgb(221 210 210)'}}>
+          <div className="steps-container">
             <List
               split={false}
-              dataSource={selectedListItem.steps}
+              dataSource={currentValidItem.steps}
               hoverable={true}
               noDataElement={<></>}
               render={(step,index)=>{
                 return (<StepItem
                   className="step-item"
-                  style={{fontSize:'12px' , padding:'3px 0px'}}
                   fillColor={theme.panelBackgroundColor}
-                  content={step.content}
-                  finished={step.finished}
+                  data={step}
                   index={index}
-                  onClick={this.handleStepItemClick}
-                  onChange={this.handleStepContentChange}
+                  onClick={()=>{
+                    step.finished = !step.finished;
+                    this.setState({currentValidItem:currentValidItem});
+                  }}
+                  onChange={(val)=>{
+                    step.content = val;
+                    this.setState({currentValidItem:currentValidItem});
+                  }}
                 />)
               }}
             />
-            <div>
+            <div className="step-item">
               <div onClick={(e)=>{
                   if(!this.state.editingNewStep){
-                    this.setState({editingNewStep:true},()=>{
+                    this.setState({editingNewStep:true },()=>{
                         if(this.stepInputRef.current)this.stepInputRef.current.focus();
                       })
                 }}} 
@@ -425,19 +579,18 @@ class App extends Component{
               <div style={{display:this.state.editingNewStep?'':'none'}}>
                 <StepItem
                   forwardedRef={this.stepInputRef}
-                  finished={false}
-                  content={this.state.newStepContent || ""}
+                  data={this.state.newStep}
                   onChange={(val)=>{
-                    this.setState({newStepContent:val});
+                    this.setState({newStep:{content:val,finished:false}});
                   }}
                   onPressEnter={(e)=>{
                     this.addNewStep();
-                    this.setState({newStepContent:""});
                   }}
                   onBlur={(e)=>{
-                    this.addNewStep();
+                    const cont = this.state.newStep.content;
+                    if(cont && cont.length>0)
+                      this.addNewStep();
                     this.setState({
-                      newStepContent:"",
                       editingNewStep:false,
                     })
                   }}/>
@@ -446,31 +599,32 @@ class App extends Component{
           </div>
           <Space/>
           <div>
-            <div style={{padding:'20px 20px' , border:'1px solid rgb(221 210 210)' , color:'rgb(53,128,199)'}} className="flex-row">
-              <IconSun/>
-              <Text style={{fontSize:18 , color:'inherit'}}>添加到我的一天</Text>
-              <IconClose style={{ height:20 , width:20 , marginLeft:20}} onClick={(e)=>{this.deleteFromList()}}></IconClose>
+            <div style={{padding:'20px 20px' , border:'1px solid rgb(221 210 210)' , color:alreadyAdded?'rgb(53,128,199)':'rgb(118,118,118)'}} className="flex-row">
+              <IconSun style={{marginRight:20}}/>
+              <Text style={{fontSize:17 , color:'inherit'}}>{alreadyAdded?'已添加到我的一天':"添加到我的一天"}</Text>
+              <IconClose className="clickable-icon" style={{ height:20 , width:20 , marginLeft:20 , display:alreadyAdded?'':'none'}} onClick={(e)=>{this.deleteFromList(currentValidItem)}}></IconClose>
             </div>
           </div>
           <Space/>
-          <div style={{padding:'20px 20px 20px 0px' , border:'1px solid rgb(221 210 210)'}}>
-            <Form initialValues={selectedListItem} onValuesChange={(values)=>{
-              console.log(values);
-              // const newList = this.state.list;
-              // newList[this.state.selectedListItemIndex] = values;
-              // this.setState({list:newList});
-            }}>
-                <FormItem label={<IconClockCircle />} value={selectedListItem.remindDate} onChange={(val)=>{selectedListItem.remindDate = val;}}>
-                  <DatePicker value={selectedListItem.remindDate}
-                    triggerElement={<Input placeholder="提醒我"/>}/>
+          <div className="border-form-container">
+            <Form initialValues={this.state.currentValidItem}>
+                <FormItem label={<IconClockCircle />}>
+                  <DatePicker value={currentValidItem.remindDate}
+                    onChange={(val)=>{currentValidItem.remindDate = val;this.setState({currentValidItem:currentValidItem})}}
+                    editable={false}
+                    triggerElement={<Input placeholder="提醒我" value={currentValidItem.remindDate}/>}/>
                 </FormItem>
 
-                <FormItem label={<IconCalendar/>} value={selectedListItem.deadline} onChange={(val)=>{selectedListItem.deadline = val;}}>
-                  <DatePicker value={selectedListItem.deadline}
-                    triggerElement={<Input placeholder="截至日期"/>}/>
+                <FormItem label={<IconCalendar/>}>
+                  <DatePicker value={currentValidItem.deadline}
+                    onChange={(val)=>{currentValidItem.deadline = val;this.setState({currentValidItem:currentValidItem})}}
+                    editable={false}
+                    triggerElement={<Input placeholder="截至日期" value={currentValidItem.deadline}/>}/>
                 </FormItem>
-                <FormItem label={' '} value={selectedListItem.backMem} onChange={(val)=>{selectedListItem.backMem = val;}}>
-                    <TextArea placeholder="添加备注" style={{height:50 , width:"100%"}} value={selectedListItem.memory}/>
+                <FormItem label={' '} value={currentValidItem.backMem}>
+                    <TextArea placeholder="添加备注" style={{height:130 , width:"100%" , fontSize:0.8}} 
+                    value={currentValidItem.backMem}  
+                    onChange={(val)=>{currentValidItem.backMem = val;this.setState({})}}/>
                 </FormItem>
             </Form>
           </div>

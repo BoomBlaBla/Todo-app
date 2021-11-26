@@ -3,6 +3,7 @@ import React, {Component} from 'react';
 import './ToDoItem.css';
 import {CheckRadio} from './CheckRadio';
 import {StarRadio} from './StarRadio';
+import {IconCalendar , IconCheck} from '@arco-design/web-react/icon';
 
 class ToDoItem extends Component{
     constructor(props){
@@ -19,17 +20,17 @@ class ToDoItem extends Component{
     }
 
     handleRadioClick(e){
-        this.props.onFinishedRadioClick(this.props.index);
+        this.props.onFinishedRadioClick();
         e.stopPropagation();
     }
 
     handleStarClick(e){
-        this.props.onStarRadioClick(this.props.index);
+        this.props.onStarRadioClick();
         e.stopPropagation();
     }
 
     handleItemClick(e){
-        if(this.props.onClick) this.props.onClick(this.props.index,e);
+        if(this.props.onClick) this.props.onClick(e);
     }
 
     updateContent(val,updateToApp){
@@ -43,7 +44,7 @@ class ToDoItem extends Component{
 
     render(){
         const props = this.props;
-        const TitleElement = this.props.editable?
+        const TitleElement = props.editable?
                                 (<Input ref={(ref)=>{this.inputRef = ref}} 
                                     className="no-border"
                                     style={{textDecoration:props.finished&&!props.editing?'line-through':'' , backgroundColor:'white'}} 
@@ -55,24 +56,37 @@ class ToDoItem extends Component{
                                 (<span style={{textDecoration:props.finished?'line-through':''}}>
                                     {props.content}
                                 </span>);
-        const unfinishedStepIndexs = this.props.steps==null || this.props.steps.find((step,index)=>{
-            if(!step.finished){
-                return index;
-            }
-        });
-        const current = (unfinishedStepIndexs==null?1:(unfinishedStepIndexs[0]+1));
+        const steps = props.steps || [];
+        const unfinishedSteps = steps.filter((step)=>{
+            return !step.finished;
+        }) || [];
+        const Icon = unfinishedSteps.length==0?IconCheck:()=>{return (<> . </>)}
+        const current = steps.length - unfinishedSteps.length;
         return (
             <List.Item key={'task-'+props.index} {...props}
                 onClick={this.handleItemClick}
                 extra={
-                    <StarRadio fillColor={props.fillColor} className="star-button" important={props.important} onClick={this.handleStarClick}/>
+                    <div className="flex-col">
+                        <StarRadio fillColor={props.fillColor} className="star-button" important={props.important} onClick={this.handleStarClick}/>
+                    </div>
                 }>
                 <List.Item.Meta
                     avatar={
                         <CheckRadio style={{width:26,height:26}} fillColor={props.fillColor} checked={props.finished} onClick={this.handleRadioClick}/> 
                     }
                     title={TitleElement}
-                    description={props.steps!=null && props.steps.length > 0 && props.showStepInfo!=false && "任务#"+props.steps[0].content + ' . 第'+current+'步 , 共'+props.steps.length+'步'}
+                    description={
+                        <div className="task-description">
+                            <span className="step-description" style={{display:steps.length > 0 && props.showStepInfo!=false ?'':'none'}}>
+                                任务
+                                <Icon/>               
+                                {'第'+(current)+'步 , 共'+steps.length+'步'}
+                            </span>
+                            <span className="step-description" style={{color:'rgb(220,40,43)' , display:props.deadline?'':'none'}}>
+                                <IconCalendar/>{props.deadline}
+                            </span>
+                        </div>
+                    }
                 />
             </List.Item>
         );

@@ -22,10 +22,10 @@ class StepItem extends Component{
         const onPressEnter = props.onPressEnter || (()=>{this.inputRef.blur()});
         const onBlur = props.onBlur ;
         const {forwardedRef,...rest} = this.props;
-        return (<List.Item key={'step-'+props.index} {...props}>
+        return (<List.Item key={'step-'+props.index} className={props.className}>
                 <List.Item.Meta
                     avatar={
-                        <CheckRadio style={{width:21 , height:21}} fillColor={props.fillColor} checked={props.finished} onClick={this.handleClick}/>
+                        <CheckRadio style={{width:24 , height:24}} fillColor={props.fillColor} checked={props.data.finished} onClick={this.handleClick}/>
                     }
                     title={
                         <div style={{paddingBottom:'3px',borderBottom:'2px solid rgb(229,230,235)'}}>
@@ -34,7 +34,7 @@ class StepItem extends Component{
                                     if(forwardedRef) forwardedRef.current=ref;
                                 }}
                                 style={{textDecoration:props.finished?'line-through':'' , backgroundColor:'inherit', fontSize:'12px' , color:!props.finished?'black':'gray'}} 
-                                value={props.content}
+                                value={props.data.content}
                                 onChange={(val)=>{this.handleChange(val)}}
                                 onPressEnter={onPressEnter}
                                 onBlur={onBlur}

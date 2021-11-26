@@ -35,7 +35,7 @@ class CheckRadio extends React.Component{
         }
         //属性展开
         return (<span {...props} style={{...props.style , ...style}} onClick={this.props.onClick} onMouseEnter={this.handleMouseOver} onMouseLeave={this.handleMouseOut}>
-                <IconCheck style={{color:checked?'white':'rgb(115,115,115)',display:displayVal  , height:'100%' , width:'100%'}}/>
+                <IconCheck className="clickable-icon" style={{color:checked?'white':'rgb(115,115,115)',display:displayVal  , height:'100%' , width:'100%'}}/>
             </span>)
     }
 }

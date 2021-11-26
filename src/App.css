@@ -43,7 +43,22 @@
   display:flex;
   flex-direction:row;
   align-items: center;
-  justify-content: space-between;
+}
+
+.flex-col{
+  display:flex;
+  height:100%;
+  flex-direction:column;
+  align-items:center;
+  justify-content: space-around;
+}
+
+.sider-header{
+  position:absolute;
+  top:0;
+  right: 4px;
+  left: 4px;
+  padding:5px 10px;
 }
 
 /* .app-myList::-webkit-scrollbar-track{
@@ -85,9 +100,10 @@ input.no-border{
 }
 
 .menu-container{
-  background-color:white;
+  background-color:rgb(250,250,250);
   font-size:14px;
   font-weight: 500;
+
 }
 
 .menu-item{
@@ -96,6 +112,14 @@ input.no-border{
 
 .menu-item + .menu-item{
   margin-top:5px;
+}
+
+.right-sider{
+  padding-right:2px;
+}
+
+.right-sider-content{
+  padding:0px 12px 15px 12px;
 }
 
 .list-item-normal{
@@ -111,4 +135,23 @@ input.no-border{
 .list-item-normal .star-button{
   width:24px;
   height:24px;
+}
+
+.clickable-icon:hover{
+  cursor:pointer;
+}
+
+.steps-container{
+  padding:10px 10px;
+  border:1px solid rgb(221 210 210);
+}
+
+.step-item{
+  padding:4px 10px!important;
+  font-size:'12px';
+}
+
+.border-form-container{
+  padding:20px 20px 20px 0px;
+  border:1px solid rgb(221 210 210);
 }
