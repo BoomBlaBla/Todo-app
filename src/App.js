@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Layout, List ,Button ,Divider, Input , Form , Typography, Modal, Space ,DatePicker} from '@arco-design/web-react';
+import { Layout, List ,Button ,Divider, Input , Form , Typography, Modal, Space ,DatePicker, Steps} from '@arco-design/web-react';
 import {Navigation} from './components/Navigation';
 import { FloatInput } from './components/FloatInput';
 import {ToDoItem} from './components/ToDoItem';
@@ -7,12 +7,13 @@ import {StepItem} from './components/StepItem';
 import {AdviceItem} from './components/AdviceItem';
 import {ScrollBar} from './components/ScrollBar';
 import {
-    IconCheck,IconDelete,IconPlus,IconMore,IconHome,IconSun,IconStar,IconBulb,IconClockCircle,IconCalendar,IconClose
+    IconPlus,IconMore,IconHome,IconSun,IconStar,IconBulb,IconClockCircle,IconCalendar,IconClose
 } from '@arco-design/web-react/icon';
 import '@arco-design/web-react/dist/css/arco.css';
 import {ThemeContext} from './components/Theme.jsx'
 import '@arco-design/web-react/dist/css/index.less'
 import './App.css';
+import ts from 'typescript';
 
 class App extends Component{
   constructor(props){
@@ -105,7 +106,7 @@ class App extends Component{
     window.addEventListener('resize',()=>{
       if(!resizeTimeOut){
         resizeTimeOut = setTimeout(()=>{
-          const newAppSize = {width : window.innerWidth<800?800:window.innerWidth , height:window.innerHeight<600?600:window.innerHeight}
+          const newAppSize = {width : window.innerWidth<900?900:window.innerWidth , height:window.innerHeight<600?600:window.innerHeight}
           this.setState({appSize:newAppSize});
           resizeTimeOut = null;
         },60);
@@ -148,7 +149,6 @@ class App extends Component{
         }
         else targetItem = list[index];
         targetItem = targetItem || {};
-        const steps = targetItem.steps ;
         const markImportant = ()=>{
           targetItem.important = !targetItem.important;
           this.setState({menuItem:menuItems});
@@ -157,9 +157,10 @@ class App extends Component{
           targetItem.finished = !targetItem.finished;
           this.setState({menuItems:menuItems});
         }
+        const currentValidItem = this.state.currentValidItem;
+        const steps = currentValidItem.steps || [];
         const deleteStep = ()=>{
-          const newSteps = steps.splice(index,1);
-          targetItem.steps = newSteps;
+          steps.splice(index,1);
           this.setState({menuItems:menuItems});
         }
         const markStepFinished = ()=>{
@@ -314,17 +315,17 @@ class App extends Component{
                   selectedItemEditingTempField:newSelectedItemEditingTempField, 
                   currentValidItem:item,
                   showDetails:true});
-    e.preventDefault();
+    if(e)e.preventDefault();
   }
 
   handleStarRadioClick(item){
     item.important = !item.important;
-    this.setState({currentValidItem:this.state.currentValidItem});
+    this.setState({menuItems:this.state.menuItems});
   }
 
   handleFinishedRadioClick(item){
     item.finished = !item.finished;
-    this.setState({currentValidItem:this.state.currentValidItem});
+    this.setState({menuItems:this.state.menuItems});
   }
 
   //修改主题
@@ -332,16 +333,14 @@ class App extends Component{
     this.state.menuItems[index].theme = theme;
     this.setState({menuItems:this.state.menuItems});
   }
-
-  switchState(){
-
-  }
   
   deleteFromList(idx,mKey){
     const newMenuItems = this.state.menuItems;
     const menu = this.state.menuItems.find((item)=>{if(item.key == mKey) return item;})
+    const deletedItem = menu.list[idx];
     menu.list.splice(idx,1);
     this.setState({menuItems:newMenuItems});
+    return deletedItem;
   }
 
   addToList(item , mKey){
@@ -351,9 +350,8 @@ class App extends Component{
     this.setState({menuItems:newMenuItems});
   }
 
-  moveToList(item , mKey){
-    this.deleteFromList(item , mKey);
-    this.addToList(item , mKey);
+  moveToList(idx , from , to){
+    this.addToList(this.deleteFromList(idx , from),to);
   }
 
   addNewItemToList(){
@@ -382,7 +380,22 @@ class App extends Component{
     const todayList = this.getTodayList();
     const showAdvices = isTodayMenu&&!this.state.showCurrentItemDetails&&this.state.trigger==='button';
     const mergedList = this.findUnfinishedAndExcludedTasks();
-    const alreadyAdded =  isTodayMenu && this.state.list[this.state.selectedListItemIndex]?true:false;
+    const alreadyAdded =  todayList.includes(currentValidItem);
+    const removeFromTodayList = ()=>{
+      const idxOfItem = todayList.indexOf(currentValidItem);
+      const length = todayList.length;
+      todayList.splice(idxOfItem , 1);
+      if(idxOfItem == length-1){
+        if(length-1>0) 
+          this.handleListItemClick(null,todayList[length-2])
+        else this.setState({
+          trigger:'button',
+          showCurrentItemDetails:false,
+        })
+      }
+      else if(idxOfItem < length-1)this.handleListItemClick(null,todayList[idxOfItem]);
+      console.log(todayList);
+    }
     const themeBlocks = Object.entries(ThemeContext).map((entry)=>{
       return (<Button style={{ width:50 , height:50 , backgroundImage:entry[1].panelBackgroundImage}} 
       onClick={()=>{
@@ -398,8 +411,8 @@ class App extends Component{
     const SiderHeader =()=>{
       if(isTodayMenu && !this.state.showCurrentItemDetails && this.state.trigger!='list')
         return(<>
-          <Text>建议</Text>
-          <IconClose style={{height:24,width:24,color:'rgb(110,110,110)'}} onClick={()=>{
+          <Text style={{fontSize:18,fontWeight:'bold'}}>建议</Text>
+          <IconClose style={{height:16,width:24,color:'rgb(110,110,110)'}} onClick={()=>{
             this.setState({showDetails:false});
           }}/>
         </>)
@@ -442,8 +455,9 @@ class App extends Component{
               render={(item,index)=>(
                   <ToDoItem style={{minWidth:'420px'}}
                     className="task-item list-item-normal"
+                    {...item} 
                     index={index}
-                    {...item} fillColor={theme.panelBackgroundColor}
+                    fillColor={theme.panelBackgroundColor}
                     onClick={(e)=>{
                       this.handleListItemClick(e,item);
                     }} 
@@ -451,11 +465,10 @@ class App extends Component{
                     onStarRadioClick={()=>this.handleStarRadioClick(item)}/>
                 )} 
             />
-            <Button icon={<IconBulb style={{color:'white'}}/>}
-              style={{borderRadius:7,position:'absolute' , right:'63px', top:'28px' ,zIndex:'10000' ,width:30,height:30,backgroundColor:'rgba(25,25,25,0.56)'}}
+            <Button icon={<IconBulb style={{color:this.state.showDetails?'rgb(25,25,25)':'white'}}/>}
+              style={{borderRadius:7,position:'absolute' , right:'85px', top:'28px' ,zIndex:'10000' ,width:30,height:30,backgroundColor:this.state.showDetails?'white':'rgba(25,25,25,0.56)'}}
               onClick={(e)=>{
                 if(!isTodayMenu) this.setState({currentValidItem:this.state.list[0]||{}})
-                  
                 this.setState({
                   trigger:'button',
                   showDetails:!this.state.showDetails
@@ -464,18 +477,19 @@ class App extends Component{
               }}
             />
             <Button icon={<IconMore style={{color:'white'}}/>}
-              style={{borderRadius:7,position:'absolute' , right:'16px' , top:'28px' , zIndex:'10000',width:30,height:30,backgroundColor:'rgba(25,25,25,0.56)'}}
+              style={{borderRadius:7,position:'absolute' , right:'41px' , top:'28px' , zIndex:'10000',width:30,height:30,backgroundColor:'rgba(25,25,25,0.56)'}}
               onClick={(e)=>{this.setState({isModalVisible:!this.state.isModalVisible})}}
             />
             <Modal
               title="主题"
-              className="theme-modal-box"
               visible={this.state.isModalVisible}
               escToExit
+              className="theme-modal"
+              onCancel={()=>this.setState({isModalVisible:false})}
               maskClosable
               footer={null}
               mask={false}
-              style={{position:'absolute' , top:'64px' , right:'8px' , width:'300px'}}>
+              style={{position:'absolute' , top:64 , right:this.state.showDetails?240:18 , width:300 , boxShadow:'0 2px 15px 0 rgba(0,0,0,.15)!important'}}>
               <Space wrap size={[12, 18]}>
                 {themeBlocks}
               </Space>
@@ -602,7 +616,7 @@ class App extends Component{
             <div style={{padding:'20px 20px' , border:'1px solid rgb(221 210 210)' , color:alreadyAdded?'rgb(53,128,199)':'rgb(118,118,118)'}} className="flex-row">
               <IconSun style={{marginRight:20}}/>
               <Text style={{fontSize:17 , color:'inherit'}}>{alreadyAdded?'已添加到我的一天':"添加到我的一天"}</Text>
-              <IconClose className="clickable-icon" style={{ height:20 , width:20 , marginLeft:20 , display:alreadyAdded?'':'none'}} onClick={(e)=>{this.deleteFromList(currentValidItem)}}></IconClose>
+              <IconClose className="clickable-icon" style={{ height:20 , width:20 , marginLeft:20 , display:alreadyAdded?'':'none'}} onClick={(e)=>{removeFromTodayList()}}></IconClose>
             </div>
           </div>
           <Space/>

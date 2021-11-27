@@ -22,7 +22,9 @@ class StepItem extends Component{
         const onPressEnter = props.onPressEnter || (()=>{this.inputRef.blur()});
         const onBlur = props.onBlur ;
         const {forwardedRef,...rest} = this.props;
-        return (<List.Item key={'step-'+props.index} className={props.className}>
+        return (<List.Item key={'step-'+props.index} 
+                index={props.index}
+                className={props.className}>
                 <List.Item.Meta
                     avatar={
                         <CheckRadio style={{width:24 , height:24}} fillColor={props.fillColor} checked={props.data.finished} onClick={this.handleClick}/>

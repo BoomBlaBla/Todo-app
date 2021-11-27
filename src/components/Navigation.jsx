@@ -1,4 +1,4 @@
-import { Menu } from '@arco-design/web-react';
+import { Menu ,Badge } from '@arco-design/web-react';
 import {Component} from 'react'
 import {ThemeContext} from './Theme';
 const MenuItem = Menu.Item;
@@ -33,7 +33,10 @@ class Navigation extends Component{
         
         const generatedMenuItems = menuItems.map((item)=>{
             return (<MenuItem key={item.key} style={selectedKey===item.key?menuChosenStyle:{}}>
-                <><item.icon style={selectedKey===item.key?iconChosenColor:{}}></item.icon> {item.description}</>
+                <div className="flex-row" style={{justifyContent:'space-between'}}>
+                    <span><item.icon style={selectedKey===item.key?iconChosenColor:{}}></item.icon> {item.description}</span>
+                    <Badge count={item.list.length} dotStyle={{background: 'rgb(231,231,231)', color: '#86909C' }}></Badge>
+                </div>
             </MenuItem>)
         });
         return (

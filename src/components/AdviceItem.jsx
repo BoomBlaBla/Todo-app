@@ -1,7 +1,7 @@
 import { List , Button} from '@arco-design/web-react';
 import React, {Component} from 'react';
 import {CheckRadio} from './CheckRadio';
-import {IconCalendar , IconCheck,IconPlus} from '@arco-design/web-react/icon';
+import {IconCalendar , IconCheck,IconPlus ,IconStarFill} from '@arco-design/web-react/icon';
 
 class AdviceItem extends Component{
     constructor(props){
@@ -35,7 +35,9 @@ class AdviceItem extends Component{
         const unfinishedSteps = steps.filter((step)=>{
             return !step.finished;
         }) || [];
-        const Icon = unfinishedSteps.length==0?IconCheck:()=>{return (<> . </>)}
+        let Icon = unfinishedSteps.length==0?()=>{return (<> .<IconCheck/>. </>)}:()=>{return (<>. </>)}
+        if(props.important) 
+            Icon = ()=>{return (<> .<IconStarFill style={{color:'rgb(96,96,96)'}}/>. </>)}
         const current = steps.length - unfinishedSteps.length;
         return (
             <List.Item key={'advice-'+props.index} className={props.className}
@@ -54,8 +56,8 @@ class AdviceItem extends Component{
                     title={TitleElement}
                     description={
                         <div className="task-description">
+                            任务
                             <span className="step-description" style={{display:steps.length > 0 ?'':'none'}}>
-                                任务
                                 <Icon/>               
                                 {'第'+(current)+'步 , 共'+steps.length+'步'}
                             </span>

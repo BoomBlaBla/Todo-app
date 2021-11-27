@@ -7,7 +7,7 @@ class StarRadio extends Component{
 
     render(){
         const props = this.props;
-        if(!props.important){
+        if(props.important){
             return (
                 <span onClick={this.props.onClick} className={props.className} style={props.style}>
                     <IconStarFill className="clickable-icon" style={{width:'100%' , height:'100%' , color:this.props.fillColor}}/>

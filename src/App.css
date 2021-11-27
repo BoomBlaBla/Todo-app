@@ -35,6 +35,11 @@
 
 .arco-icon { font-size: 32; }
 
+.arco-badge-number, .arco-badge-text
+{
+  box-shadow:none!important;
+}
+
 .arco-list {
   border: none;
 }
@@ -154,4 +159,8 @@ input.no-border{
 .border-form-container{
   padding:20px 20px 20px 0px;
   border:1px solid rgb(221 210 210);
+}
+
+.theme-modal{
+  box-shadow:0 2px 15px 0 rgba(0,0,0,.15)!important;
 }
