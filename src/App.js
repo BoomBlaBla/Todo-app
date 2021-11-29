@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Layout, List ,Button ,Divider, Input , Form , Typography, Modal, Space ,DatePicker, Steps} from '@arco-design/web-react';
+import {Drawer , Layout, List ,Button ,Divider, Input , Form , Typography, Modal, Space ,DatePicker, Steps} from '@arco-design/web-react';
 import {Navigation} from './components/Navigation';
 import { FloatInput } from './components/FloatInput';
 import {ToDoItem} from './components/ToDoItem';
@@ -7,13 +7,12 @@ import {StepItem} from './components/StepItem';
 import {AdviceItem} from './components/AdviceItem';
 import {ScrollBar} from './components/ScrollBar';
 import {
-    IconPlus,IconMore,IconHome,IconSun,IconStar,IconBulb,IconClockCircle,IconCalendar,IconClose
+    IconMenuFold,IconPlus,IconMore,IconHome,IconSun,IconStar,IconBulb,IconClockCircle,IconCalendar,IconClose, IconMenu
 } from '@arco-design/web-react/icon';
 import '@arco-design/web-react/dist/css/arco.css';
 import {ThemeContext} from './components/Theme.jsx'
 import '@arco-design/web-react/dist/css/index.less'
 import './App.css';
-import ts from 'typescript';
 
 class App extends Component{
   constructor(props){
@@ -32,6 +31,8 @@ class App extends Component{
       contextMenuXY:{},
       newStep:{content:"",finished:false},
       showContextMenu:false,
+      showMenus:false,
+      isMobile:window.innerWidth<900,
       currentValidItem:{},
       menuItems:[
         {
@@ -106,8 +107,8 @@ class App extends Component{
     window.addEventListener('resize',()=>{
       if(!resizeTimeOut){
         resizeTimeOut = setTimeout(()=>{
-          const newAppSize = {width : window.innerWidth<900?900:window.innerWidth , height:window.innerHeight<600?600:window.innerHeight}
-          this.setState({appSize:newAppSize});
+          const newAppSize = {width : window.innerWidth<410?410:window.innerWidth , height:window.innerHeight}
+          this.setState({appSize:newAppSize,isMobile:newAppSize.width<900});
           resizeTimeOut = null;
         },60);
       }
@@ -365,6 +366,7 @@ class App extends Component{
   }
 
   render(){
+    const appSize = this.state.appSize;
     const theme = ThemeContext[this.getCurrentMenuItem().theme];
     const TextArea = Input.TextArea;
     const FormItem = Form.Item;
@@ -381,6 +383,8 @@ class App extends Component{
     const showAdvices = isTodayMenu&&!this.state.showCurrentItemDetails&&this.state.trigger==='button';
     const mergedList = this.findUnfinishedAndExcludedTasks();
     const alreadyAdded =  todayList.includes(currentValidItem);
+    const showDetails = this.state.showDetails;
+    const showMenus = this.state.showMenus;
     const removeFromTodayList = ()=>{
       const idxOfItem = todayList.indexOf(currentValidItem);
       const length = todayList.length;
@@ -394,7 +398,6 @@ class App extends Component{
         })
       }
       else if(idxOfItem < length-1)this.handleListItemClick(null,todayList[idxOfItem]);
-      console.log(todayList);
     }
     const themeBlocks = Object.entries(ThemeContext).map((entry)=>{
       return (<Button style={{ width:50 , height:50 , backgroundImage:entry[1].panelBackgroundImage}} 
@@ -428,22 +431,49 @@ class App extends Component{
             }}/>
           </>)
     }
+    let layoutConfig ={};
+    if(appSize.width>450){
+      layoutConfig={
+        left:200,
+        right:300,
+      }
+    }
+    else {
+      layoutConfig={
+        left:appSize.width*0.82,
+        right:appSize.width*0.82,
+      }
+    }   
+
     return (
       <div className="App"> 
         <Layout>
-        <Layout.Sider>
+        <Layout.Sider style={{width:layoutConfig.left,display:this.state.isMobile?'none':''}} >
           <div style={{height:30 , color:'rgb(115,115,115)'}}>
-            <span style={{marginLeft:15}}>Fake ToDo by YZC</span>
-          </div>
-          <Navigation style={{width:200}} 
-            menuItems={this.state.menuItems}
-            onClickMenuItem={this.handleMenuClick}
-            selectedKey={this.state.selectedKey}/>
+              <span style={{marginLeft:15}}>Fake ToDo by YZC</span>
+            </div>
+            <Navigation style={{width:'100%'}} 
+              menuItems={this.state.menuItems}
+              onClickMenuItem={this.handleMenuClick}
+              selectedKey={this.state.selectedKey}/>
         </Layout.Sider>
+        <div style={{display:this.state.isMobile?'':'none'}}>
+          <Button icon={<IconMenuFold style={{color:'white' , width:32 , height:32}}/>} iconOnly onClick={()=>this.setState({showMenus:true})}
+            style={{position:'absolute' ,background:'inherit', left:1 , top:1 , width:38 , height:38 ,zIndex:1000 , display:showMenus?'none':''}}/>
+          <Drawer width={layoutConfig.left} placement="left" visible={showMenus} footer={null} onCancel={()=>{this.setState({showMenus:false})}} onOk={()=>this.setState({showMenus:false})} headerStyle={{height:0}} closable={false}>
+            <div style={{height:30 , color:'rgb(115,115,115)'}}>
+              <span style={{marginLeft:15}}>Fake ToDo by YZC</span>
+            </div>
+            <Navigation style={{width:'100%'}} 
+              menuItems={this.state.menuItems}
+              onClickMenuItem={this.handleMenuClick}
+              selectedKey={this.state.selectedKey}/>
+          </Drawer>
+        </div>
         <Layout.Content style={{overflowY:"hidden"}} id="app-main-content">
           <div style={{height:this.state.appSize.height-10 ,padding:'5px 32px', position:'relative' , backgroundImage:theme.panelBackgroundImage}} class="task-list-container" id="list-container">
-            <div style={{display:'flex' , alignItems:'center' , height:'132px' , position:'absolute' , top:'0px' , right:'0px' , left:'0px' , backgroundColor:theme.panelBackgroundColor , opacity:'0.92456'}}>
-              <span style={{marginLeft:'40px'}}><BannerIcon style={{height:'40px', width:'40px',color:'white'}}/><span style={{color:'white' , fontSize:'39px', fontWeight:'bold' , marginLeft:'23px'}}>{BannerText}</span></span>
+            <div style={{display:'flex' , alignItems:'center' , height:132 , position:'absolute' , top:0 , right:0 , left:0 , backgroundColor:theme.panelBackgroundColor , opacity:'0.92456'}}>
+              <span style={{marginLeft:'40px'}}><BannerIcon style={{height:40, width:40,color:'white' , display:this.state.isMobile?'none':''}}/><span style={{color:'white' , fontSize:'39px', fontWeight:'bold' , marginLeft:'23px'}}>{BannerText}</span></span>
             </div>
             <List hoverable={true}
               bordered={false}
@@ -453,7 +483,7 @@ class App extends Component{
               dataSource={this.state.list}
               listRef={this.listRef}
               render={(item,index)=>(
-                  <ToDoItem style={{minWidth:'420px'}}
+                  <ToDoItem style={{minWidth:'100%'}}
                     className="task-item list-item-normal"
                     {...item} 
                     index={index}
@@ -466,18 +496,17 @@ class App extends Component{
                 )} 
             />
             <Button icon={<IconBulb style={{color:this.state.showDetails?'rgb(25,25,25)':'white'}}/>}
-              style={{borderRadius:7,position:'absolute' , right:'85px', top:'28px' ,zIndex:'10000' ,width:30,height:30,backgroundColor:this.state.showDetails?'white':'rgba(25,25,25,0.56)'}}
+              style={{borderRadius:7,position:'absolute' , right:'85px', top:'28px' ,zIndex:1000 ,width:30,height:30,backgroundColor:this.state.showDetails?'white':'rgba(25,25,25,0.56)'}}
               onClick={(e)=>{
                 if(!isTodayMenu) this.setState({currentValidItem:this.state.list[0]||{}})
                 this.setState({
                   trigger:'button',
                   showDetails:!this.state.showDetails
                 })
-                
               }}
             />
             <Button icon={<IconMore style={{color:'white'}}/>}
-              style={{borderRadius:7,position:'absolute' , right:'41px' , top:'28px' , zIndex:'10000',width:30,height:30,backgroundColor:'rgba(25,25,25,0.56)'}}
+              style={{borderRadius:7,position:'absolute' , right:'41px' , top:'28px' , zIndex:1000,width:30,height:30,backgroundColor:'rgba(25,25,25,0.56)'}}
               onClick={(e)=>{this.setState({isModalVisible:!this.state.isModalVisible})}}
             />
             <Modal
@@ -504,12 +533,152 @@ class App extends Component{
             <ScrollBar offsetY={this.state.scrollBarConfig.offsetY} visibleHeight={this.state.scrollBarConfig.visibleHeight} contentHeight={this.state.scrollBarConfig.contentHeight} target={'dsa'}/>
           </div>
         </Layout.Content>
-        <Layout.Sider className="right-sider" style={{display:(this.state.showDetails?'':'none'), minWidth:300 , height:this.state.appSize.height-1 , overflow:'hidden hidden'}} >
-          <div className="flex-row sider-header" style={{justifyContent:'space-between',zIndex:11111,backgroundColor:'white',borderBottom:'1px solid rgb(229,230,235)'}}>
+        <Drawer width={layoutConfig.right} visible={showDetails&&this.state.isMobile} onCancel={()=>{this.setState({showDetails:false})}} onOk={()=>this.setState({showDetails:false})} headerStyle={{height:0}} closable={false} footer={null}>
+          <div className="flex-row sider-header" style={{justifyContent:'space-between',backgroundColor:'white',borderBottom:'1px solid rgb(229,230,235)'}}>
             <SiderHeader/>
           </div>
           <div style={{marginTop:48}}>
           <div className="right-sider-content" style={{display:showAdvices?'':'none'}}>
+              <List dataSource={mergedList}
+                render={(item,index)=>{
+                  return (<AdviceItem index={index} className="task-item advice-item"
+                    {...item}
+                    onFinishedRadioClick={()=>{
+                      item.finished=true;
+                      this.setState({menuItems:this.state.menuItems})
+                    }}
+                    onAddRadioClick={()=>{
+                      todayList.push(item);
+                      this.setState({menuItems:this.state.menuItems});
+                    }}
+                    onItemClick={(e)=>{
+                      this.handleListItemClick(e,item,()=>{return true;});
+                      this.setState({
+                        showDetails:true,
+                        currentItemDetailedInfo:item,
+                        showCurrentItemDetails:true,
+                      })
+                    }}
+                    />);
+                }}
+              />
+        </div>
+        </div>
+        <div className="right-sider-content" style={{display:!showAdvices||this.state.showCurrentItemDetails?'':'none'}}>
+        <ToDoItem finished={currentValidItem.finished} important={currentValidItem.important} steps={currentValidItem.steps} 
+          fillColor={theme.panelBackgroundColor}
+          editable={this.state.showDetails}
+          index={currentValidItem.id}
+          showStepInfo={false}
+          onFinishedRadioClick={()=>this.handleFinishedRadioClick(currentValidItem)}
+          onStarRadioClick={()=>this.handleStarRadioClick(currentValidItem)}
+          onContentChange={(val,updateToApp)=>{
+            let newSelectedItemEditingTempField = this.state.selectedItemEditingTempField;
+            newSelectedItemEditingTempField.content = val ;
+            if(updateToApp===true){
+              currentValidItem.content = val ;
+              this.setState({list:this.state.list , selectedItemEditingTempField:newSelectedItemEditingTempField});
+            }
+            else {
+              this.setState({selectedItemEditingTempField:newSelectedItemEditingTempField});
+            }
+          }}
+          content={this.state.selectedItemEditingTempField.content}
+          />
+        <Space/>
+        <div className="steps-container">
+          <List
+            split={false}
+            dataSource={currentValidItem.steps}
+            hoverable={true}
+            noDataElement={<></>}
+            render={(step,index)=>{
+              return (<StepItem
+                className="step-item"
+                fillColor={theme.panelBackgroundColor}
+                data={step}
+                index={index}
+                onClick={()=>{
+                  step.finished = !step.finished;
+                  this.setState({currentValidItem:currentValidItem});
+                }}
+                onChange={(val)=>{
+                  step.content = val;
+                  this.setState({currentValidItem:currentValidItem});
+                }}
+              />)
+            }}
+          />
+          <div className="step-item">
+            <div onClick={(e)=>{
+                if(!this.state.editingNewStep){
+                  this.setState({editingNewStep:true },()=>{
+                      if(this.stepInputRef.current)this.stepInputRef.current.focus();
+                    })
+              }}} 
+              style={{display:!this.state.editingNewStep?'':'none'}}>
+              <span style={{color:'rgb(53,128,199)'}}><IconPlus style={{marginRight:28}}/>下一步</span>
+            </div>
+            <div style={{display:this.state.editingNewStep?'':'none'}}>
+              <StepItem
+                forwardedRef={this.stepInputRef}
+                data={this.state.newStep}
+                onChange={(val)=>{
+                  this.setState({newStep:{content:val,finished:false}});
+                }}
+                onPressEnter={(e)=>{
+                  this.addNewStep();
+                }}
+                onBlur={(e)=>{
+                  const cont = this.state.newStep.content;
+                  if(cont && cont.length>0)
+                    this.addNewStep();
+                  this.setState({
+                    editingNewStep:false,
+                  })
+                }}/>
+            </div>
+          </div>
+        </div>
+        <Space/>
+        <div>
+          <div style={{padding:'20px 20px' , border:'1px solid rgb(221 210 210)' , color:alreadyAdded?'rgb(53,128,199)':'rgb(118,118,118)'}} className="flex-row">
+            <IconSun style={{marginRight:20}}/>
+            <Text style={{fontSize:17 , color:'inherit'}}>{alreadyAdded?'已添加到我的一天':"添加到我的一天"}</Text>
+            <IconClose className="clickable-icon" style={{ height:20 , width:20 , marginLeft:20 , display:alreadyAdded?'':'none'}} onClick={(e)=>{removeFromTodayList()}}></IconClose>
+          </div>
+        </div>
+        <Space/>
+        <div className="border-form-container">
+          <Form initialValues={this.state.currentValidItem}>
+              <FormItem label={<IconClockCircle />}>
+                <DatePicker value={currentValidItem.remindDate}
+                  onChange={(val)=>{currentValidItem.remindDate = val;this.setState({currentValidItem:currentValidItem})}}
+                  editable={false}
+                  triggerElement={<Input placeholder="提醒我" value={currentValidItem.remindDate}/>}/>
+              </FormItem>
+
+              <FormItem label={<IconCalendar/>}>
+                <DatePicker value={currentValidItem.deadline}
+                  onChange={(val)=>{currentValidItem.deadline = val;this.setState({currentValidItem:currentValidItem})}}
+                  editable={false}
+                  triggerElement={<Input placeholder="截至日期" value={currentValidItem.deadline}/>}/>
+              </FormItem>
+              <FormItem label={' '} value={currentValidItem.backMem}>
+                  <TextArea placeholder="添加备注" style={{height:130 , width:"100%" , fontSize:0.8}} 
+                  value={currentValidItem.backMem}  
+                  onChange={(val)=>{currentValidItem.backMem = val;this.setState({})}}/>
+              </FormItem>
+          </Form>
+        </div>
+        </div>
+        </Drawer>
+        <Layout.Sider className="right-sider" style={{display:(showDetails&&!this.state.isMobile?'':'none'), width:layoutConfig.right , height:appSize.height-1 , overflow:'hidden hidden'}}>
+            <div className="flex-row sider-header" style={{justifyContent:'space-between',zIndex:5001,backgroundColor:'white',borderBottom:'1px solid rgb(229,230,235)'}}>
+              <SiderHeader/>
+            </div>
+            <div style={{marginTop:48}}>
+            <div className="right-sider-content" style={{display:showAdvices?'':'none'}}>
                 <List dataSource={mergedList}
                   render={(item,index)=>{
                     return (<AdviceItem index={index} className="task-item advice-item"

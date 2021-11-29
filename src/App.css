@@ -84,6 +84,10 @@
   display:none;
 }
 
+.arco-drawer-content{
+  padding:0 0!important;
+}
+
 .arco-layout-sider-children::-webkit-scrollbar-thumb{
   background-color:rgba(25,25,25,0.52);
   border-radius: 2px;
