@@ -7,7 +7,7 @@ import {StepItem} from './components/StepItem';
 import {AdviceItem} from './components/AdviceItem';
 import {ScrollBar} from './components/ScrollBar';
 import {
-    IconMenuFold,IconPlus,IconMore,IconHome,IconSun,IconStar,IconBulb,IconClockCircle,IconCalendar,IconClose, IconMenu
+  IconApps,IconPlus,IconMore,IconHome,IconSun,IconStar,IconBulb,IconClockCircle,IconCalendar,IconClose, IconMenu
 } from '@arco-design/web-react/icon';
 import '@arco-design/web-react/dist/css/arco.css';
 import {ThemeContext} from './components/Theme.jsx'
@@ -81,7 +81,6 @@ class App extends Component{
     this.getCurrentItem = this.getCurrentItem.bind(this);
     this.getCurrentMenuItem = this.getCurrentMenuItem.bind(this);
     this.getTodayList = this.getTodayList.bind(this);
-    this.getValidItem = this.getValidItem.bind(this);
     this.addNewItemToList = this.addNewItemToList.bind(this);
     this.listRef = React.createRef();
     this.stepInputRef = React.createRef();
@@ -114,7 +113,6 @@ class App extends Component{
       }
     },false);
     
-
     document.onselectstart = ()=>{return false;}
     document.oncontextmenu = (e)=>{
       let index ,isAdvice = false;
@@ -297,12 +295,6 @@ class App extends Component{
     });
   }
 
-  getValidItem(aIndex){
-    const curSelectedItem = this.state.list[aIndex||this.state.selectedListItemIndex] || {};
-    const selectedListItem = this.state.showCurrentItemDetails?this.state.currentItemDetailedInfo:curSelectedItem;
-    return selectedListItem;
-  }
-
   handleListItemClick(e,item,test){
     const newSelectedItemEditingTempField = JSON.parse(JSON.stringify(item));//需要深拷贝
     if(this.state.currentValidItem===item || (test&&test()))
@@ -397,7 +389,8 @@ class App extends Component{
           showCurrentItemDetails:false,
         })
       }
-      else if(idxOfItem < length-1)this.handleListItemClick(null,todayList[idxOfItem]);
+      else if(idxOfItem < length-1)
+        this.handleListItemClick(null,todayList[idxOfItem]);
     }
     const themeBlocks = Object.entries(ThemeContext).map((entry)=>{
       return (<Button style={{ width:50 , height:50 , backgroundImage:entry[1].panelBackgroundImage}} 
@@ -458,8 +451,8 @@ class App extends Component{
               selectedKey={this.state.selectedKey}/>
         </Layout.Sider>
         <div style={{display:this.state.isMobile?'':'none'}}>
-          <Button icon={<IconMenuFold style={{color:'white' , width:32 , height:32}}/>} iconOnly onClick={()=>this.setState({showMenus:true})}
-            style={{position:'absolute' ,background:'inherit', left:1 , top:1 , width:38 , height:38 ,zIndex:1000 , display:showMenus?'none':''}}/>
+          <Button icon={<IconApps style={{color:'white' , width:25 , height:25}}/>} iconOnly onClick={()=>this.setState({showMenus:true})}
+            style={{position:'absolute' ,background:'inherit', left:10 , top:20 , width:30 , height:30 ,zIndex:1000 , display:showMenus?'none':''}}/>
           <Drawer width={layoutConfig.left} placement="left" visible={showMenus} footer={null} onCancel={()=>{this.setState({showMenus:false})}} onOk={()=>this.setState({showMenus:false})} headerStyle={{height:0}} closable={false}>
             <div style={{height:30 , color:'rgb(115,115,115)'}}>
               <span style={{marginLeft:15}}>Fake ToDo by YZC</span>
@@ -473,12 +466,12 @@ class App extends Component{
         <Layout.Content style={{overflowY:"hidden"}} id="app-main-content">
           <div style={{height:this.state.appSize.height-10 ,padding:'5px 32px', position:'relative' , backgroundImage:theme.panelBackgroundImage}} class="task-list-container" id="list-container">
             <div style={{display:'flex' , alignItems:'center' , height:132 , position:'absolute' , top:0 , right:0 , left:0 , backgroundColor:theme.panelBackgroundColor , opacity:'0.92456'}}>
-              <span style={{marginLeft:'40px'}}><BannerIcon style={{height:40, width:40,color:'white' , display:this.state.isMobile?'none':''}}/><span style={{color:'white' , fontSize:'39px', fontWeight:'bold' , marginLeft:'23px'}}>{BannerText}</span></span>
+              <span style={{marginLeft:'40px'}}><BannerIcon style={{height:40, width:40,color:'white' , display:this.state.isMobile?'none':''}}/><span style={{color:'white' , fontSize:this.state.isMobile?30:39, fontWeight:'bold' , marginLeft:'23px'}}>{BannerText}</span></span>
             </div>
             <List hoverable={true}
               bordered={false}
               split={false}
-              style={{marginTop:this.state.offTop,paddingTop:150,maxHeight:this.state.contentHeight,paddingBottom:90}}
+              style={{marginTop:this.state.offTop,paddingTop:150,maxHeight:this.state.contentHeight,paddingBottom:220}}
               className="app-myList"
               dataSource={this.state.list}
               listRef={this.listRef}
@@ -495,18 +488,18 @@ class App extends Component{
                     onStarRadioClick={()=>this.handleStarRadioClick(item)}/>
                 )} 
             />
-            <Button icon={<IconBulb style={{color:this.state.showDetails?'rgb(25,25,25)':'white'}}/>}
-              style={{borderRadius:7,position:'absolute' , right:'85px', top:'28px' ,zIndex:1000 ,width:30,height:30,backgroundColor:this.state.showDetails?'white':'rgba(25,25,25,0.56)'}}
+            <Button icon={<IconBulb style={{color:showDetails?'rgb(25,25,25)':'white'}}/>}
+              style={{borderRadius:7,position:'absolute' , right:80, top:20 ,zIndex:1000 ,width:30,height:30,backgroundColor:showDetails?'white':'rgba(25,25,25,0.56)'}}
               onClick={(e)=>{
                 if(!isTodayMenu) this.setState({currentValidItem:this.state.list[0]||{}})
                 this.setState({
                   trigger:'button',
-                  showDetails:!this.state.showDetails
+                  showDetails:!showDetails
                 })
               }}
             />
             <Button icon={<IconMore style={{color:'white'}}/>}
-              style={{borderRadius:7,position:'absolute' , right:'41px' , top:'28px' , zIndex:1000,width:30,height:30,backgroundColor:'rgba(25,25,25,0.56)'}}
+              style={{borderRadius:7,position:'absolute' , right:36 , top:20 , zIndex:1000,width:30,height:30,backgroundColor:'rgba(25,25,25,0.56)'}}
               onClick={(e)=>{this.setState({isModalVisible:!this.state.isModalVisible})}}
             />
             <Modal
@@ -518,7 +511,7 @@ class App extends Component{
               maskClosable
               footer={null}
               mask={false}
-              style={{position:'absolute' , top:64 , right:this.state.showDetails?240:18 , width:300 , boxShadow:'0 2px 15px 0 rgba(0,0,0,.15)!important'}}>
+              style={{position:'absolute' , top:64 , right:showDetails?240:18 , width:300 , boxShadow:'0 2px 15px 0 rgba(0,0,0,.15)!important'}}>
               <Space wrap size={[12, 18]}>
                 {themeBlocks}
               </Space>
@@ -567,7 +560,7 @@ class App extends Component{
         <div className="right-sider-content" style={{display:!showAdvices||this.state.showCurrentItemDetails?'':'none'}}>
         <ToDoItem finished={currentValidItem.finished} important={currentValidItem.important} steps={currentValidItem.steps} 
           fillColor={theme.panelBackgroundColor}
-          editable={this.state.showDetails}
+          editable={showDetails}
           index={currentValidItem.id}
           showStepInfo={false}
           onFinishedRadioClick={()=>this.handleFinishedRadioClick(currentValidItem)}
@@ -707,7 +700,7 @@ class App extends Component{
           <div className="right-sider-content" style={{display:!showAdvices||this.state.showCurrentItemDetails?'':'none'}}>
           <ToDoItem finished={currentValidItem.finished} important={currentValidItem.important} steps={currentValidItem.steps} 
             fillColor={theme.panelBackgroundColor}
-            editable={this.state.showDetails}
+            editable={showDetails}
             index={currentValidItem.id}
             showStepInfo={false}
             onFinishedRadioClick={()=>this.handleFinishedRadioClick(currentValidItem)}
@@ -807,7 +800,7 @@ class App extends Component{
                 <FormItem label={' '} value={currentValidItem.backMem}>
                     <TextArea placeholder="添加备注" style={{height:130 , width:"100%" , fontSize:0.8}} 
                     value={currentValidItem.backMem}  
-                    onChange={(val)=>{currentValidItem.backMem = val;this.setState({})}}/>
+                    onChange={(val)=>{currentValidItem.backMem = val;this.setState({currentValidItem:currentValidItem})}}/>
                 </FormItem>
             </Form>
           </div>
